@@ -1,13 +1,19 @@
-const createListHandler = (Model) => async (req, res, next) => {
-  try {
-    const limit = Math.min(Number(req.query.limit) || 50, 100);
-    const data = await Model.find().limit(limit);
+const asyncHandler = require("../middleware/asyncHandler");
+const { listResources, getResourceById } = require("../services/resource.service");
+
+const createListHandler = (Model) =>
+  asyncHandler(async (req, res) => {
+    const data = await listResources(Model, req.query);
     res.json(data);
-  } catch (error) {
-    next(error);
-  }
-};
+  });
+
+const createDetailHandler = (Model) =>
+  asyncHandler(async (req, res) => {
+    const data = await getResourceById(Model, req.params.id);
+    res.json(data);
+  });
 
 module.exports = {
   createListHandler,
+  createDetailHandler,
 };

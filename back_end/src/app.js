@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 
 const apiRouter = require("./routes");
+const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 
 const app = express();
 
@@ -20,5 +21,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api", apiRouter);
+app.use(notFound);
+app.use(errorHandler);
 
 module.exports = app;
