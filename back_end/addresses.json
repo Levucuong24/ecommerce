@@ -1,0 +1,13 @@
+[
+  {
+    "_id": { "$oid": "665100000000000000000001" },
+    "userId": { "$oid": "665000000000000000000002" },
+    "fullName": "Nguyen Van A",
+    "phone": "0900000002",
+    "province": "Ha Noi",
+    "district": "Cau Giay",
+    "ward": "Dich Vong",
+    "detail": "So 1 Tran Duy Hung",
+    "isDefault": true
+  }
+]

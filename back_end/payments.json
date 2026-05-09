@@ -1,0 +1,11 @@
+[
+  {
+    "_id": { "$oid": "665700000000000000000001" },
+    "orderId": { "$oid": "665600000000000000000001" },
+    "provider": "COD",
+    "transactionId": "COD123456",
+    "amount": 28000000,
+    "status": "success",
+    "paidAt": { "$date": "2026-02-02T10:05:00Z" }
+  }
+]

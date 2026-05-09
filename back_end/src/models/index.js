@@ -1,0 +1,13 @@
+module.exports = {
+  User: require("./user.model"),
+  Address: require("./address.model"),
+  Category: require("./category.model"),
+  Product: require("./product.model"),
+  Review: require("./review.model"),
+  Cart: require("./cart.model"),
+  Order: require("./order.model"),
+  Payment: require("./payment.model"),
+  Wishlist: require("./wishlist.model"),
+  Coupon: require("./coupon.model"),
+  Notification: require("./notification.model"),
+};

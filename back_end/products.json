@@ -1,0 +1,21 @@
+[
+  {
+    "_id": { "$oid": "665300000000000000000001" },
+    "name": "iPhone 15 Pro",
+    "slug": "iphone-15-pro",
+    "description": "Apple flagship phone",
+    "price": 30000000,
+    "discountPrice": 28000000,
+    "stock": 10,
+    "categoryId": { "$oid": "665200000000000000000001" },
+    "images": ["iphone15.jpg"],
+    "attributes": {
+      "color": "Black",
+      "brand": "Apple"
+    },
+    "ratingAverage": 4.8,
+    "ratingCount": 1,
+    "isPublished": true,
+    "createdBy": { "$oid": "665000000000000000000001" }
+  }
+]
