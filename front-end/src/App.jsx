@@ -1,4 +1,8 @@
 import { useState } from "react";
+import AuthShell from "./features/auth/AuthShell";
+import LoginForm from "./features/auth/login/LoginForm";
+import RegisterForm from "./features/auth/register/RegisterForm";
+import HomePage from "./features/home/HomePage";
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const allowedRoles = new Set(["admin", "staff", "user", "customer"]);
@@ -18,6 +22,7 @@ const initialRegisterData = {
 };
 
 function App() {
+  const [page, setPage] = useState("home");
   const [mode, setMode] = useState("login");
   const [loginData, setLoginData] = useState(initialLoginData);
   const [registerData, setRegisterData] = useState(initialRegisterData);
@@ -32,6 +37,17 @@ function App() {
 
   const switchMode = (nextMode) => {
     setMode(nextMode);
+    clearMessage();
+  };
+
+  const openAuthPage = (nextMode = "login") => {
+    setPage("auth");
+    setMode(nextMode);
+    clearMessage();
+  };
+
+  const goHomePage = () => {
+    setPage("home");
     clearMessage();
   };
 
@@ -161,6 +177,7 @@ function App() {
       setMessageType("success");
       setRegisterData(initialRegisterData);
       setMode("login");
+      setPage("auth");
       setLoginData((current) => ({
         ...current,
         email: registerData.email,
@@ -174,229 +191,34 @@ function App() {
     }
   };
 
+  if (page === "home") {
+    return <HomePage onOpenLogin={() => openAuthPage("login")} />;
+  }
+
   return (
-    <main className="login-page">
-      <section className="brand-panel">
-        <div className="brand-copy">
-          <p className="brand-tag">Ecommerce Admin</p>
-          <h1>{mode === "login" ? "Chao mung ban quay tro lai" : "Tao tai khoan moi"}</h1>
-          <p className="brand-text">
-            {mode === "login"
-              ? "Dang nhap de quan ly don hang, cap nhat san pham va theo doi tinh hinh kinh doanh cua cua hang."
-              : "Dang ky tai khoan de bat dau mua sam, quan ly thong tin ca nhan va theo doi don hang cua ban."}
-          </p>
-        </div>
-
-        <div className="brand-metrics">
-          <article className="metric-card">
-            <span>Hom nay</span>
-            <strong>128 don hang</strong>
-          </article>
-          <article className="metric-card">
-            <span>Doanh thu</span>
-            <strong>84.500.000 VND</strong>
-          </article>
-          <article className="metric-card">
-            <span>Khach quay lai</span>
-            <strong>64%</strong>
-          </article>
-        </div>
-      </section>
-
-      <section className="login-panel">
-        <div className="login-card">
-          <div className="mode-switch" role="tablist" aria-label="Authentication tabs">
-            <button
-              type="button"
-              className={`mode-button ${mode === "login" ? "active" : ""}`}
-              onClick={() => switchMode("login")}
-            >
-              Dang nhap
-            </button>
-            <button
-              type="button"
-              className={`mode-button ${mode === "register" ? "active" : ""}`}
-              onClick={() => switchMode("register")}
-            >
-              Dang ky
-            </button>
-          </div>
-
-          {mode === "login" ? (
-            <>
-              <div className="login-header">
-                <p className="form-tag">Dang nhap tai khoan</p>
-                <h2>Bat dau lam viec</h2>
-                <p className="form-text">
-                  Su dung email va mat khau cua ban de truy cap he thong.
-                </p>
-              </div>
-
-              <form className="login-form" onSubmit={handleLoginSubmit}>
-                <label className="field-group">
-                  <span>Email</span>
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="you@example.com"
-                    value={loginData.email}
-                    onChange={handleLoginChange}
-                  />
-                </label>
-
-                <label className="field-group">
-                  <span>Mat khau</span>
-                  <input
-                    type="password"
-                    name="password"
-                    placeholder="Nhap mat khau"
-                    value={loginData.password}
-                    onChange={handleLoginChange}
-                  />
-                </label>
-
-                <div className="form-row">
-                  <label className="checkbox-row">
-                    <input
-                      type="checkbox"
-                      name="remember"
-                      checked={loginData.remember}
-                      onChange={handleLoginChange}
-                    />
-                    <span>Ghi nho dang nhap</span>
-                  </label>
-                  <a href="/" className="text-link">
-                    Quen mat khau?
-                  </a>
-                </div>
-
-                <button
-                  type="submit"
-                  className="primary-button"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Dang xu ly..." : "Dang nhap"}
-                </button>
-
-                {message ? <p className={`form-message ${messageType}`}>{message}</p> : null}
-              </form>
-
-              <div className="divider">
-                <span>Hoac tiep tuc voi</span>
-              </div>
-
-              <div className="social-actions">
-                <button type="button" className="secondary-button">
-                  Google
-                </button>
-                <button type="button" className="secondary-button">
-                  Facebook
-                </button>
-              </div>
-
-              <p className="signup-text">
-                Chua co tai khoan?{" "}
-                <button
-                  type="button"
-                  className="inline-action"
-                  onClick={() => switchMode("register")}
-                >
-                  Dang ky ngay
-                </button>
-              </p>
-            </>
-          ) : (
-            <>
-              <div className="login-header">
-                <p className="form-tag">Tao tai khoan moi</p>
-                <h2>Dang ky nhanh</h2>
-                <p className="form-text">
-                  Dien day du thong tin de tao tai khoan nguoi dung moi.
-                </p>
-              </div>
-
-              <form className="login-form" onSubmit={handleRegisterSubmit}>
-                <label className="field-group">
-                  <span>Ho va ten</span>
-                  <input
-                    type="text"
-                    name="name"
-                    placeholder="Nguyen Van A"
-                    value={registerData.name}
-                    onChange={handleRegisterChange}
-                  />
-                </label>
-
-                <label className="field-group">
-                  <span>Email</span>
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="you@example.com"
-                    value={registerData.email}
-                    onChange={handleRegisterChange}
-                  />
-                </label>
-
-                <label className="field-group">
-                  <span>So dien thoai</span>
-                  <input
-                    type="text"
-                    name="phone"
-                    placeholder="0123456789"
-                    value={registerData.phone}
-                    onChange={handleRegisterChange}
-                  />
-                </label>
-
-                <label className="field-group">
-                  <span>Mat khau</span>
-                  <input
-                    type="password"
-                    name="password"
-                    placeholder="Nhap mat khau"
-                    value={registerData.password}
-                    onChange={handleRegisterChange}
-                  />
-                </label>
-
-                <label className="field-group">
-                  <span>Xac nhan mat khau</span>
-                  <input
-                    type="password"
-                    name="confirmPassword"
-                    placeholder="Nhap lai mat khau"
-                    value={registerData.confirmPassword}
-                    onChange={handleRegisterChange}
-                  />
-                </label>
-
-                <button
-                  type="submit"
-                  className="primary-button"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Dang xu ly..." : "Dang ky tai khoan"}
-                </button>
-
-                {message ? <p className={`form-message ${messageType}`}>{message}</p> : null}
-              </form>
-
-              <p className="signup-text">
-                Da co tai khoan?{" "}
-                <button
-                  type="button"
-                  className="inline-action"
-                  onClick={() => switchMode("login")}
-                >
-                  Dang nhap
-                </button>
-              </p>
-            </>
-          )}
-        </div>
-      </section>
-    </main>
+    <AuthShell mode={mode} onSwitchMode={switchMode} onBackHome={goHomePage}>
+      {mode === "login" ? (
+        <LoginForm
+          formData={loginData}
+          isSubmitting={isSubmitting}
+          message={message}
+          messageType={messageType}
+          onChange={handleLoginChange}
+          onSubmit={handleLoginSubmit}
+          onSwitchToRegister={() => openAuthPage("register")}
+        />
+      ) : (
+        <RegisterForm
+          formData={registerData}
+          isSubmitting={isSubmitting}
+          message={message}
+          messageType={messageType}
+          onChange={handleRegisterChange}
+          onSubmit={handleRegisterSubmit}
+          onSwitchToLogin={() => openAuthPage("login")}
+        />
+      )}
+    </AuthShell>
   );
 }
 
