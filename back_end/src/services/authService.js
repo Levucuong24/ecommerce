@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
 const { User } = require("../models");
@@ -19,6 +20,7 @@ const registerUser = async ({ name, email, password, phone }) => {
 
   const hashedPassword = await bcrypt.hash(password, 10);
   const user = await User.create({
+    _id: new mongoose.Types.ObjectId(),
     name,
     email,
     password: hashedPassword,
