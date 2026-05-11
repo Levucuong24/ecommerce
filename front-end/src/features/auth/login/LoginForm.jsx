@@ -6,6 +6,7 @@ function LoginForm({
   onChange,
   onSubmit,
   onSwitchToRegister,
+  onSwitchToForgotPassword,
 }) {
   return (
     <>
@@ -50,9 +51,9 @@ function LoginForm({
             />
             <span>Ghi nho dang nhap</span>
           </label>
-          <a href="/" className="text-link">
+          <button type="button" className="text-link" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }} onClick={onSwitchToForgotPassword}>
             Quen mat khau?
-          </a>
+          </button>
         </div>
 
         <button type="submit" className="primary-button" disabled={isSubmitting}>

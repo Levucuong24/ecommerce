@@ -1,6 +1,7 @@
 import { useState } from "react";
 import AuthShell from "./features/auth/AuthShell";
 import LoginForm from "./features/auth/login/LoginForm";
+import ForgotPasswordForm from "./features/auth/login/ForgotPasswordForm";
 import RegisterForm from "./features/auth/register/RegisterForm";
 import HomePage from "./features/home/HomePage";
 import CartPage from "./features/cart/CartPage";
@@ -215,6 +216,11 @@ function App() {
           onChange={handleLoginChange}
           onSubmit={handleLoginSubmit}
           onSwitchToRegister={() => openAuthPage("register")}
+          onSwitchToForgotPassword={() => openAuthPage("forgotPassword")}
+        />
+      ) : mode === "forgotPassword" ? (
+        <ForgotPasswordForm
+          onSwitchToLogin={() => openAuthPage("login")}
         />
       ) : (
         <RegisterForm

@@ -10,6 +10,8 @@ const userSchema = new mongoose.Schema(
     phone: String,
     avatar: String,
     isVerified: { type: Boolean, default: false },
+    resetPasswordToken: String,
+    resetPasswordExpires: Date,
     createdAt: Date,
   },
   { versionKey: false }

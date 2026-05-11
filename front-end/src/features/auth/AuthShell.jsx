@@ -7,11 +7,19 @@ function AuthShell({ mode, onSwitchMode, onBackHome, children }) {
         <div className="brand-copy">
           <Logo className="brand-logo" />
           <p className="brand-tag">Ecommerce Admin</p>
-          <h1>{mode === "login" ? "Chao mung ban quay tro lai" : "Tao tai khoan moi"}</h1>
+          <h1>
+            {mode === "login" 
+              ? "Chao mung ban quay tro lai" 
+              : mode === "forgotPassword" 
+                ? "Khoi phuc mat khau" 
+                : "Tao tai khoan moi"}
+          </h1>
           <p className="brand-text">
             {mode === "login"
               ? "Dang nhap de quan ly don hang, cap nhat san pham va theo doi tinh hinh kinh doanh cua cua hang."
-              : "Dang ky tai khoan de bat dau mua sam, quan ly thong tin ca nhan va theo doi don hang cua ban."}
+              : mode === "forgotPassword"
+                ? "Nhap email cua ban de nhan ma khoi phuc mat khau."
+                : "Dang ky tai khoan de bat dau mua sam, quan ly thong tin ca nhan va theo doi don hang cua ban."}
           </p>
         </div>
 
