@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import AuthShell from "./features/auth/AuthShell";
 import LoginForm from "./features/auth/login/LoginForm";
 import ForgotPasswordForm from "./features/auth/login/ForgotPasswordForm";
@@ -24,7 +25,7 @@ const initialRegisterData = {
 };
 
 function App() {
-  const [page, setPage] = useState("home");
+  const navigate = useNavigate();
   const [mode, setMode] = useState("login");
   const [loginData, setLoginData] = useState(initialLoginData);
   const [registerData, setRegisterData] = useState(initialRegisterData);
@@ -43,18 +44,18 @@ function App() {
   };
 
   const openAuthPage = (nextMode = "login") => {
-    setPage("auth");
     setMode(nextMode);
     clearMessage();
+    navigate("/auth");
   };
 
   const goHomePage = () => {
-    setPage("home");
     clearMessage();
+    navigate("/home");
   };
 
   const openCartPage = () => {
-    setPage("cart");
+    navigate("/cart");
   };
 
   const handleLoginChange = (event) => {
@@ -114,10 +115,10 @@ function App() {
 
       if (data.user) {
         localStorage.setItem("user", JSON.stringify(data.user));
+        setMessage("Login thanh cong");
+        setMessageType("success");
+        navigate(`/${data.user._id}`);
       }
-
-      setMessage("Login thanh cong");
-      setMessageType("success");
     } catch (error) {
       setMessage("fail");
       setMessageType("error");
@@ -183,12 +184,12 @@ function App() {
       setMessageType("success");
       setRegisterData(initialRegisterData);
       setMode("login");
-      setPage("auth");
       setLoginData((current) => ({
         ...current,
         email: registerData.email,
         password: "",
       }));
+      navigate(`/${data.user._id}`);
     } catch (error) {
       setMessage("Khong the ket noi den backend");
       setMessageType("error");
@@ -197,43 +198,44 @@ function App() {
     }
   };
 
-  if (page === "home") {
-    return <HomePage onOpenLogin={() => openAuthPage("login")} onOpenCart={openCartPage} />;
-  }
-
-  if (page === "cart") {
-    return <CartPage onBackHome={goHomePage} />;
-  }
-
   return (
-    <AuthShell mode={mode} onSwitchMode={switchMode} onBackHome={goHomePage}>
-      {mode === "login" ? (
-        <LoginForm
-          formData={loginData}
-          isSubmitting={isSubmitting}
-          message={message}
-          messageType={messageType}
-          onChange={handleLoginChange}
-          onSubmit={handleLoginSubmit}
-          onSwitchToRegister={() => openAuthPage("register")}
-          onSwitchToForgotPassword={() => openAuthPage("forgotPassword")}
-        />
-      ) : mode === "forgotPassword" ? (
-        <ForgotPasswordForm
-          onSwitchToLogin={() => openAuthPage("login")}
-        />
-      ) : (
-        <RegisterForm
-          formData={registerData}
-          isSubmitting={isSubmitting}
-          message={message}
-          messageType={messageType}
-          onChange={handleRegisterChange}
-          onSubmit={handleRegisterSubmit}
-          onSwitchToLogin={() => openAuthPage("login")}
-        />
-      )}
-    </AuthShell>
+    <Routes>
+      <Route path="/" element={<Navigate to="/home" />} />
+      <Route path="/home" element={<HomePage onOpenLogin={() => openAuthPage("login")} onOpenCart={openCartPage} />} />
+      <Route path="/cart" element={<CartPage onBackHome={goHomePage} />} />
+      <Route path="/:id" element={<HomePage onOpenLogin={() => openAuthPage("login")} onOpenCart={openCartPage} />} />
+      <Route
+        path="/auth"
+        element={
+          <AuthShell mode={mode} onSwitchMode={switchMode} onBackHome={goHomePage}>
+            {mode === "login" ? (
+              <LoginForm
+                formData={loginData}
+                isSubmitting={isSubmitting}
+                message={message}
+                messageType={messageType}
+                onChange={handleLoginChange}
+                onSubmit={handleLoginSubmit}
+                onSwitchToRegister={() => switchMode("register")}
+                onSwitchToForgotPassword={() => switchMode("forgotPassword")}
+              />
+            ) : mode === "forgotPassword" ? (
+              <ForgotPasswordForm onSwitchToLogin={() => switchMode("login")} />
+            ) : (
+              <RegisterForm
+                formData={registerData}
+                isSubmitting={isSubmitting}
+                message={message}
+                messageType={messageType}
+                onChange={handleRegisterChange}
+                onSubmit={handleRegisterSubmit}
+                onSwitchToLogin={() => switchMode("login")}
+              />
+            )}
+          </AuthShell>
+        }
+      />
+    </Routes>
   );
 }
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Logo from "../../components/Logo";
 import iphone15Pro from "../../assets/images/iphone15pro.png";
 
@@ -13,6 +14,12 @@ const quickLinks = [
   { label: "Do Dien Tu", icon: "/images/dodientu.png" },
   { label: "Lam Dep", icon: "/images/lamdep.png" },
   { label: "Gia Dung", icon: "/images/giadung.png" },
+];
+
+const bannerImages = [
+  "/images/flashsale.png",
+  "/images/mall.png",
+  "/images/voucher.png",
 ];
 
 const fallbackCategories = [
@@ -52,10 +59,36 @@ const buildBadge = (price, discountPrice) => {
 };
 
 function HomePage({ onOpenLogin, onOpenCart }) {
+  const navigate = useNavigate();
   const [categories, setCategories] = useState(fallbackCategories);
   const [products, setProducts] = useState(fallbackProducts);
+  const [user, setUser] = useState(null);
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % bannerImages.length);
+    }, 10000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    setUser(null);
+    navigate("/home");
+  };
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (e) {
+        console.error("Invalid user data in local storage");
+      }
+    }
+
     const fetchCategories = async () => {
       try {
         const response = await fetch(`${apiUrl}/categories?limit=8`);
@@ -112,21 +145,38 @@ function HomePage({ onOpenLogin, onOpenCart }) {
               <span className="notification-trigger">Thong bao</span>
               <div className="notification-popup">
                 <img src="/images/logothongbao.png" alt="Thông báo" className="notification-empty-img" />
-                <p>Đăng nhập để xem Thông báo</p>
-                <div className="notification-actions">
-                  <button type="button" onClick={onOpenLogin} className="notification-login-btn">
-                    Đăng nhập
-                  </button>
-                  <button type="button" className="notification-register-btn">
-                    Đăng ký
-                  </button>
-                </div>
+                {user ? (
+                  <p>Chưa có thông báo mới</p>
+                ) : (
+                  <>
+                    <p>Đăng nhập để xem Thông báo</p>
+                    <div className="notification-actions">
+                      <button type="button" onClick={onOpenLogin} className="notification-login-btn">
+                        Đăng nhập
+                      </button>
+                      <button type="button" className="notification-register-btn">
+                        Đăng ký
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
             <span>Ho tro</span>
-            <button type="button" className="shop-login-link" onClick={onOpenLogin}>
-              Login
-            </button>
+            {user ? (
+              <div className="user-dropdown-wrapper">
+                <span className="shop-login-link" style={{ cursor: 'pointer' }}>Hi, {user.name}</span>
+                <div className="user-dropdown-popup">
+                  <button type="button" onClick={handleLogout} className="logout-btn">
+                    Đăng xuất
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button type="button" className="shop-login-link" onClick={onOpenLogin}>
+                Login
+              </button>
+            )}
           </div>
         </div>
 
@@ -167,33 +217,39 @@ function HomePage({ onOpenLogin, onOpenCart }) {
       </header>
 
       <section className="hero-banner">
-        <div className="hero-banner-main">
-          <div className="hero-copy">
-            <p className="hero-label">Sieu sale xanh bien</p>
-            <h1>Mua sam thong minh, deal dep moi ngay</h1>
-            <p>
-              Khong gian mua sam theo phong cach san thuong mai dien tu hien dai,
-              toi uu cho flash sale, voucher va san pham noi bat.
-            </p>
-            <div className="hero-cta-row">
-              <button type="button" className="hero-primary-button">
-                Kham pha ngay
-              </button>
-              <button type="button" className="hero-secondary-button" onClick={onOpenLogin}>
-                Dang nhap
-              </button>
-            </div>
+        <div className="hero-carousel">
+          <div 
+            className="hero-carousel-track" 
+            style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+          >
+            {bannerImages.map((src, index) => (
+              <div className="hero-carousel-slide" key={index}>
+                <img src={src} alt={`Banner ${index + 1}`} />
+              </div>
+            ))}
           </div>
-
-          <div className="hero-side-cards">
-            <article className="hero-mini-card">
-              <span>Ma giam gia</span>
-              <strong>Giam toi 500K</strong>
-            </article>
-            <article className="hero-mini-card">
-              <span>Van chuyen</span>
-              <strong>Free ship toan quoc</strong>
-            </article>
+          <button 
+            type="button" 
+            className="carousel-btn prev" 
+            onClick={() => setCurrentSlide(prev => (prev === 0 ? bannerImages.length - 1 : prev - 1))}
+          >
+            &#10094;
+          </button>
+          <button 
+            type="button" 
+            className="carousel-btn next" 
+            onClick={() => setCurrentSlide(prev => (prev + 1) % bannerImages.length)}
+          >
+            &#10095;
+          </button>
+          <div className="carousel-dots">
+            {bannerImages.map((_, index) => (
+              <span 
+                key={index} 
+                className={`dot ${currentSlide === index ? 'active' : ''}`}
+                onClick={() => setCurrentSlide(index)}
+              ></span>
+            ))}
           </div>
         </div>
 
