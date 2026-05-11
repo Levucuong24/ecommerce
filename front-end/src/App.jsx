@@ -3,6 +3,7 @@ import AuthShell from "./features/auth/AuthShell";
 import LoginForm from "./features/auth/login/LoginForm";
 import RegisterForm from "./features/auth/register/RegisterForm";
 import HomePage from "./features/home/HomePage";
+import CartPage from "./features/cart/CartPage";
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const allowedRoles = new Set(["admin", "staff", "user", "customer"]);
@@ -49,6 +50,10 @@ function App() {
   const goHomePage = () => {
     setPage("home");
     clearMessage();
+  };
+
+  const openCartPage = () => {
+    setPage("cart");
   };
 
   const handleLoginChange = (event) => {
@@ -192,7 +197,11 @@ function App() {
   };
 
   if (page === "home") {
-    return <HomePage onOpenLogin={() => openAuthPage("login")} />;
+    return <HomePage onOpenLogin={() => openAuthPage("login")} onOpenCart={openCartPage} />;
+  }
+
+  if (page === "cart") {
+    return <CartPage onBackHome={goHomePage} />;
   }
 
   return (

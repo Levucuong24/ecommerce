@@ -1,17 +1,18 @@
 import { useEffect, useState } from "react";
 import Logo from "../../components/Logo";
+import iphone15Pro from "../../assets/images/iphone15pro.png";
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const quickLinks = [
-  { label: "Voucher", icon: "VC" },
-  { label: "Free Ship", icon: "FS" },
-  { label: "Mall", icon: "ML" },
-  { label: "Flash Sale", icon: "SL" },
-  { label: "Nap The", icon: "NT" },
-  { label: "Do Dien Tu", icon: "DT" },
-  { label: "Lam Dep", icon: "LD" },
-  { label: "Gia Dung", icon: "GD" },
+  { label: "Voucher", icon: "/images/voucher.png" },
+  { label: "Free Ship", icon: "/images/freeship.png" },
+  { label: "Mall", icon: "/images/mall.png" },
+  { label: "Flash Sale", icon: "/images/flashsale.png" },
+  { label: "Nap The", icon: "/images/napthe.png" },
+  { label: "Do Dien Tu", icon: "/images/dodientu.png" },
+  { label: "Lam Dep", icon: "/images/lamdep.png" },
+  { label: "Gia Dung", icon: "/images/giadung.png" },
 ];
 
 const fallbackCategories = [
@@ -36,6 +37,11 @@ const fallbackProducts = [
 
 const formatPrice = (value) => Number(value || 0).toLocaleString("vi-VN");
 
+const imageMap = {
+  "iphone15.jpg": iphone15Pro,
+  "iphone15pro.png": iphone15Pro,
+};
+
 const buildBadge = (price, discountPrice) => {
   if (!discountPrice || discountPrice >= price || !price) {
     return "Moi";
@@ -45,7 +51,7 @@ const buildBadge = (price, discountPrice) => {
   return `-${percent}%`;
 };
 
-function HomePage({ onOpenLogin }) {
+function HomePage({ onOpenLogin, onOpenCart }) {
   const [categories, setCategories] = useState(fallbackCategories);
   const [products, setProducts] = useState(fallbackProducts);
 
@@ -80,6 +86,7 @@ function HomePage({ onOpenLogin }) {
             price: item.discountPrice || item.price || 0,
             sold: `Ton kho ${item.stock ?? 0}`,
             badge: buildBadge(item.price, item.discountPrice),
+            image: imageMap[item.images?.[0]] || iphone15Pro,
           }))
         );
       } catch (error) {
@@ -101,7 +108,21 @@ function HomePage({ onOpenLogin }) {
             <span>Ket noi</span>
           </div>
           <div className="shop-top-links">
-            <span>Thong bao</span>
+            <div className="notification-wrapper">
+              <span className="notification-trigger">Thong bao</span>
+              <div className="notification-popup">
+                <img src="/images/logothongbao.png" alt="Thông báo" className="notification-empty-img" />
+                <p>Đăng nhập để xem Thông báo</p>
+                <div className="notification-actions">
+                  <button type="button" onClick={onOpenLogin} className="notification-login-btn">
+                    Đăng nhập
+                  </button>
+                  <button type="button" className="notification-register-btn">
+                    Đăng ký
+                  </button>
+                </div>
+              </div>
+            </div>
             <span>Ho tro</span>
             <button type="button" className="shop-login-link" onClick={onOpenLogin}>
               Login
@@ -127,7 +148,21 @@ function HomePage({ onOpenLogin }) {
             </div>
           </div>
 
-          <div className="shop-cart-pill">Gio hang</div>
+          <div className="shop-cart-wrapper">
+            <button type="button" className="shop-cart-pill" onClick={onOpenCart} aria-label="Giỏ hàng">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="9" cy="21" r="1"></circle>
+                <circle cx="20" cy="21" r="1"></circle>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+              </svg>
+            </button>
+            <div className="cart-popup">
+              <div className="empty-cart-message">
+                <img src="/images/logochuacosanpham.png" alt="Chưa có sản phẩm" className="empty-cart-img" />
+                <p>Chưa có sản phẩm</p>
+              </div>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -165,7 +200,9 @@ function HomePage({ onOpenLogin }) {
         <div className="quick-entry-grid">
           {quickLinks.map((item) => (
             <article key={item.label} className="quick-entry-card">
-              <div className="quick-entry-icon">{item.icon}</div>
+              <div className="quick-entry-icon">
+                <img src={item.icon} alt={item.label} />
+              </div>
               <span>{item.label}</span>
             </article>
           ))}
@@ -207,13 +244,14 @@ function HomePage({ onOpenLogin }) {
         <section className="product-panel">
           <div className="section-heading">
             <h2>Cac san pham</h2>
-            <span>Du lieu tu products</span>
+
           </div>
 
           <div className="product-grid">
             {products.map((product) => (
               <article key={product.name} className="product-card">
                 <div className="product-thumb">
+                  <img src={product.image} alt={product.name} className="product-image" />
                   <span className="product-badge">{product.badge}</span>
                 </div>
                 <div className="product-body">
