@@ -34,7 +34,7 @@ function ForgotPasswordForm({ onSwitchToLogin }) {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || "Something went wrong");
+        throw new Error(data.message || "Có lỗi xảy ra, vui lòng thử lại sau");
       }
 
       setMessageType("success");
@@ -71,7 +71,7 @@ function ForgotPasswordForm({ onSwitchToLogin }) {
       }
 
       setMessageType("success");
-      setMessage("Password reset successful. You can now login.");
+      setMessage("Đặt lại mật khẩu thành công! Đang chuyển hướng về trang đăng nhập...");
       
       // Delay and switch back to login
       setTimeout(() => {
@@ -88,12 +88,12 @@ function ForgotPasswordForm({ onSwitchToLogin }) {
   return (
     <>
       <div className="login-header">
-        <p className="form-tag">Khoi phuc mat khau</p>
-        <h2>Quen mat khau?</h2>
+        <p className="form-tag">Khôi phục mật khẩu</p>
+        <h2>Quên mật khẩu?</h2>
         <p className="form-text">
           {step === 1 
-            ? "Vui long nhap email da dang ky de nhan ma xac nhan (OTP)."
-            : "Vui long nhap ma OTP va mat khau moi cua ban."}
+            ? "Vui lòng nhập email đã đăng ký để nhận mã xác nhận (OTP)."
+            : "Vui lòng nhập mã OTP và mật khẩu mới của bạn."}
         </p>
       </div>
 
@@ -112,7 +112,7 @@ function ForgotPasswordForm({ onSwitchToLogin }) {
           </label>
 
           <button type="submit" className="primary-button" disabled={isSubmitting}>
-            {isSubmitting ? "Dang gui..." : "Gui ma OTP"}
+            {isSubmitting ? "Đang gửi..." : "Gửi mã OTP"}
           </button>
         </form>
       ) : (
@@ -128,11 +128,11 @@ function ForgotPasswordForm({ onSwitchToLogin }) {
           </label>
 
           <label className="field-group">
-            <span>Ma OTP</span>
+            <span>Mã OTP</span>
             <input
               type="text"
               name="otp"
-              placeholder="Nhap ma 6 so"
+              placeholder="Nhập mã 6 số"
               value={formData.otp}
               onChange={handleChange}
               required
@@ -140,11 +140,11 @@ function ForgotPasswordForm({ onSwitchToLogin }) {
           </label>
 
           <label className="field-group">
-            <span>Mat khau moi</span>
+            <span>Mật khẩu mới</span>
             <input
               type="password"
               name="newPassword"
-              placeholder="Nhap mat khau moi"
+              placeholder="Nhập mật khẩu mới"
               value={formData.newPassword}
               onChange={handleChange}
               required
@@ -152,7 +152,7 @@ function ForgotPasswordForm({ onSwitchToLogin }) {
           </label>
 
           <button type="submit" className="primary-button" disabled={isSubmitting}>
-            {isSubmitting ? "Dang xu ly..." : "Doi mat khau"}
+            {isSubmitting ? "Đang xử lý..." : "Đổi mật khẩu"}
           </button>
         </form>
       )}
@@ -164,12 +164,12 @@ function ForgotPasswordForm({ onSwitchToLogin }) {
       )}
 
       <div className="divider">
-        <span>Hoac</span>
+        <span>Hoặc</span>
       </div>
 
       <p className="signup-text" style={{ textAlign: 'center' }}>
         <button type="button" className="inline-action" onClick={onSwitchToLogin}>
-          Quay lai dang nhap
+          Quay lại đăng nhập
         </button>
       </p>
     </>

@@ -11,10 +11,10 @@ function LoginForm({
   return (
     <>
       <div className="login-header">
-        <p className="form-tag">Dang nhap tai khoan</p>
-        <h2>Bat dau lam viec</h2>
+        <p className="form-tag">Đăng nhập tài khoản</p>
+        <h2>Bắt đầu làm việc</h2>
         <p className="form-text">
-          Su dung email va mat khau cua ban de truy cap he thong.
+          Sử dụng email và mật khẩu của bạn để truy cập hệ thống.
         </p>
       </div>
 
@@ -24,9 +24,10 @@ function LoginForm({
           <input
             type="email"
             name="email"
-            placeholder="you@example.com"
+            placeholder="Ví dụ: ban@example.com"
             value={formData.email}
             onChange={onChange}
+            required
           />
         </label>
 
@@ -35,9 +36,10 @@ function LoginForm({
           <input
             type="password"
             name="password"
-            placeholder="Nhap mat khau"
+            placeholder="Nhập mật khẩu"
             value={formData.password}
             onChange={onChange}
+            required
           />
         </label>
 
@@ -49,22 +51,22 @@ function LoginForm({
               checked={formData.remember}
               onChange={onChange}
             />
-            <span>Ghi nho dang nhap</span>
+            <span>Ghi nhớ đăng nhập</span>
           </label>
           <button type="button" className="text-link" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }} onClick={onSwitchToForgotPassword}>
-            Quen mat khau?
+            Quên mật khẩu?
           </button>
         </div>
 
         <button type="submit" className="primary-button" disabled={isSubmitting}>
-          {isSubmitting ? "Dang xu ly..." : "Dang nhap"}
+          {isSubmitting ? "Đang xử lý..." : "Đăng nhập"}
         </button>
 
         {message ? <p className={`form-message ${messageType}`}>{message}</p> : null}
       </form>
 
       <div className="divider">
-        <span>Hoac tiep tuc voi</span>
+        <span>Hoặc tiếp tục với</span>
       </div>
 
       <div className="social-actions">
@@ -77,9 +79,9 @@ function LoginForm({
       </div>
 
       <p className="signup-text">
-        Chua co tai khoan?{" "}
+        Chưa có tài khoản?{" "}
         <button type="button" className="inline-action" onClick={onSwitchToRegister}>
-          Dang ky ngay
+          Đăng ký ngay
         </button>
       </p>
     </>

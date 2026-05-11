@@ -81,7 +81,7 @@ function App() {
     clearMessage();
 
     if (!loginData.email || !loginData.password) {
-      setMessage("fail");
+      setMessage("Vui lòng nhập đầy đủ email và mật khẩu");
       setMessageType("error");
       return;
     }
@@ -103,8 +103,14 @@ function App() {
       const data = await response.json().catch(() => ({}));
       const userRole = String(data?.user?.role || "").toLowerCase();
 
-      if (!response.ok || !allowedRoles.has(userRole)) {
-        setMessage("fail");
+      if (!response.ok) {
+        setMessage(data.message || "Đăng nhập thất bại");
+        setMessageType("error");
+        return;
+      }
+
+      if (!allowedRoles.has(userRole)) {
+        setMessage("Tài khoản của bạn không có quyền truy cập");
         setMessageType("error");
         return;
       }
@@ -115,12 +121,12 @@ function App() {
 
       if (data.user) {
         localStorage.setItem("user", JSON.stringify(data.user));
-        setMessage("Login thanh cong");
+        setMessage("Đăng nhập thành công");
         setMessageType("success");
-        navigate(`/${data.user._id}`);
+        setTimeout(() => navigate("/home"), 1000);
       }
     } catch (error) {
-      setMessage("fail");
+      setMessage("Không thể kết nối đến máy chủ");
       setMessageType("error");
     } finally {
       setIsSubmitting(false);
@@ -137,13 +143,13 @@ function App() {
       !registerData.password ||
       !registerData.confirmPassword
     ) {
-      setMessage("Dang ky that bai");
+      setMessage("Vui lòng điền đầy đủ các thông tin bắt buộc");
       setMessageType("error");
       return;
     }
 
     if (registerData.password !== registerData.confirmPassword) {
-      setMessage("Mat khau xac nhan khong dung");
+      setMessage("Mật khẩu xác nhận không khớp");
       setMessageType("error");
       return;
     }
@@ -167,7 +173,7 @@ function App() {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setMessage(data.message || "Dang ky that bai");
+        setMessage(data.message || "Đăng ký thất bại");
         setMessageType("error");
         return;
       }
@@ -180,18 +186,21 @@ function App() {
         localStorage.setItem("user", JSON.stringify(data.user));
       }
 
-      setMessage("Dang ky thanh cong");
+      setMessage("Đăng ký thành công!");
       setMessageType("success");
       setRegisterData(initialRegisterData);
-      setMode("login");
-      setLoginData((current) => ({
-        ...current,
-        email: registerData.email,
-        password: "",
-      }));
-      navigate(`/${data.user._id}`);
+      
+      setTimeout(() => {
+        setMode("login");
+        setLoginData((current) => ({
+          ...current,
+          email: registerData.email,
+          password: "",
+        }));
+        navigate("/home");
+      }, 1500);
     } catch (error) {
-      setMessage("Khong the ket noi den backend");
+      setMessage("Không thể kết nối đến máy chủ");
       setMessageType("error");
     } finally {
       setIsSubmitting(false);

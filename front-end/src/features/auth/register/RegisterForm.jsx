@@ -10,10 +10,10 @@ function RegisterForm({
   return (
     <>
       <div className="login-header">
-        <p className="form-tag">Tao tai khoan moi</p>
-        <h2>Dang ky nhanh</h2>
+        <p className="form-tag">Tạo tài khoản mới</p>
+        <h2>Đăng ký nhanh</h2>
         <p className="form-text">
-          Dien day du thong tin de tao tai khoan nguoi dung moi.
+          Điền đầy đủ thông tin để tạo tài khoản người dùng mới.
         </p>
       </div>
 
@@ -23,9 +23,10 @@ function RegisterForm({
           <input
             type="text"
             name="name"
-            placeholder="Nguyen Van A"
+            placeholder="Ví dụ: Nguyễn Văn A"
             value={formData.name}
             onChange={onChange}
+            required
           />
         </label>
 
@@ -34,9 +35,10 @@ function RegisterForm({
           <input
             type="email"
             name="email"
-            placeholder="you@example.com"
+            placeholder="Ví dụ: ban@example.com"
             value={formData.email}
             onChange={onChange}
+            required
           />
         </label>
 
@@ -45,7 +47,7 @@ function RegisterForm({
           <input
             type="text"
             name="phone"
-            placeholder="0123456789"
+            placeholder="Ví dụ: 0123456789"
             value={formData.phone}
             onChange={onChange}
           />
@@ -56,9 +58,10 @@ function RegisterForm({
           <input
             type="password"
             name="password"
-            placeholder="Nhap mat khau"
+            placeholder="Nhập mật khẩu"
             value={formData.password}
             onChange={onChange}
+            required
           />
         </label>
 
@@ -67,23 +70,24 @@ function RegisterForm({
           <input
             type="password"
             name="confirmPassword"
-            placeholder="Nhap lai mat khau"
+            placeholder="Nhập lại mật khẩu"
             value={formData.confirmPassword}
             onChange={onChange}
+            required
           />
         </label>
 
         <button type="submit" className="primary-button" disabled={isSubmitting}>
-          {isSubmitting ? "Dang xu ly..." : "Dang ky tai khoan"}
+          {isSubmitting ? "Đang xử lý..." : "Đăng ký tài khoản"}
         </button>
 
         {message ? <p className={`form-message ${messageType}`}>{message}</p> : null}
       </form>
 
       <p className="signup-text">
-        Da co tai khoan?{" "}
+        Đã có tài khoản?{" "}
         <button type="button" className="inline-action" onClick={onSwitchToLogin}>
-          Dang nhap
+          Đăng nhập
         </button>
       </p>
     </>
