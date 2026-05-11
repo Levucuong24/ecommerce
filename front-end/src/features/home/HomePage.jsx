@@ -1,4 +1,7 @@
+import { useEffect, useState } from "react";
 import Logo from "../../components/Logo";
+
+const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const quickLinks = [
   { label: "Voucher", icon: "VC" },
@@ -11,7 +14,7 @@ const quickLinks = [
   { label: "Gia Dung", icon: "GD" },
 ];
 
-const categories = [
+const fallbackCategories = [
   "Thoi Trang",
   "Dien Thoai",
   "Laptop",
@@ -22,16 +25,72 @@ const categories = [
   "Nha Cua",
 ];
 
-const products = [
-  { name: "Tai nghe Bluetooth Pro", price: "449.000", sold: "Da ban 2,1k", badge: "-18%" },
-  { name: "May loc khong khi mini", price: "1.290.000", sold: "Da ban 860", badge: "-25%" },
-  { name: "Balo laptop chong nuoc", price: "329.000", sold: "Da ban 1,4k", badge: "-12%" },
-  { name: "Ban phim co gaming", price: "799.000", sold: "Da ban 980", badge: "-15%" },
-  { name: "Den hoc LED cam ung", price: "259.000", sold: "Da ban 730", badge: "-10%" },
-  { name: "Dong ho thong minh S8", price: "1.590.000", sold: "Da ban 1,1k", badge: "-22%" },
+const fallbackProducts = [
+  { name: "Tai nghe Bluetooth Pro", price: 449000, sold: "Da ban 2,1k", badge: "-18%" },
+  { name: "May loc khong khi mini", price: 1290000, sold: "Da ban 860", badge: "-25%" },
+  { name: "Balo laptop chong nuoc", price: 329000, sold: "Da ban 1,4k", badge: "-12%" },
+  { name: "Ban phim co gaming", price: 799000, sold: "Da ban 980", badge: "-15%" },
+  { name: "Den hoc LED cam ung", price: 259000, sold: "Da ban 730", badge: "-10%" },
+  { name: "Dong ho thong minh S8", price: 1590000, sold: "Da ban 1,1k", badge: "-22%" },
 ];
 
+const formatPrice = (value) => Number(value || 0).toLocaleString("vi-VN");
+
+const buildBadge = (price, discountPrice) => {
+  if (!discountPrice || discountPrice >= price || !price) {
+    return "Moi";
+  }
+
+  const percent = Math.round(((price - discountPrice) / price) * 100);
+  return `-${percent}%`;
+};
+
 function HomePage({ onOpenLogin }) {
+  const [categories, setCategories] = useState(fallbackCategories);
+  const [products, setProducts] = useState(fallbackProducts);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/categories?limit=8`);
+        const data = await response.json();
+
+        if (!response.ok || !Array.isArray(data.items) || data.items.length === 0) {
+          return;
+        }
+
+        setCategories(data.items.map((item) => item.name));
+      } catch (error) {
+        // Keep fallback categories when backend is unavailable.
+      }
+    };
+
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/products?limit=6`);
+        const data = await response.json();
+
+        if (!response.ok || !Array.isArray(data.items) || data.items.length === 0) {
+          return;
+        }
+
+        setProducts(
+          data.items.map((item) => ({
+            name: item.name,
+            price: item.discountPrice || item.price || 0,
+            sold: `Ton kho ${item.stock ?? 0}`,
+            badge: buildBadge(item.price, item.discountPrice),
+          }))
+        );
+      } catch (error) {
+        // Keep fallback products when backend is unavailable.
+      }
+    };
+
+    fetchCategories();
+    fetchProducts();
+  }, []);
+
   return (
     <main className="home-page shopee-inspired">
       <header className="shop-header">
@@ -138,7 +197,7 @@ function HomePage({ onOpenLogin }) {
               <article key={product.name} className="flash-item-card">
                 <div className="flash-item-thumb">{product.badge}</div>
                 <h3>{product.name}</h3>
-                <strong>{product.price}d</strong>
+                <strong>{formatPrice(product.price)}d</strong>
                 <span>{product.sold}</span>
               </article>
             ))}
@@ -147,8 +206,8 @@ function HomePage({ onOpenLogin }) {
 
         <section className="product-panel">
           <div className="section-heading">
-            <h2>Goi y hom nay</h2>
-            <span>San pham ban chay</span>
+            <h2>Cac san pham</h2>
+            <span>Du lieu tu products</span>
           </div>
 
           <div className="product-grid">
@@ -159,10 +218,10 @@ function HomePage({ onOpenLogin }) {
                 </div>
                 <div className="product-body">
                   <h3>{product.name}</h3>
-                  <strong>{product.price}d</strong>
+                  <strong>{formatPrice(product.price)}d</strong>
                   <div className="product-meta">
                     <span>{product.sold}</span>
-                    <span>Yeu thich</span>
+                    <span>San pham</span>
                   </div>
                 </div>
               </article>

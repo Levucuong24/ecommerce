@@ -269,6 +269,7 @@ a {
   background:
     linear-gradient(180deg, rgba(15, 117, 255, 0.1), rgba(255, 255, 255, 0.96)),
     #fff;
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
 }
 
 .hero-mini-card span {
@@ -294,6 +295,10 @@ a {
   text-align: center;
   color: #0f172a;
   box-shadow: 0 14px 32px rgba(14, 88, 202, 0.1);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
 
 .quick-entry-icon {
@@ -305,6 +310,7 @@ a {
   border-radius: 18px;
   background: linear-gradient(135deg, #dbeafe, #eff6ff);
   font-size: 1.45rem;
+  transition: transform 0.2s ease, background 0.2s ease;
 }
 
 .quick-entry-card span {
@@ -362,6 +368,11 @@ a {
   background: linear-gradient(135deg, #eef6ff, #ffffff);
   border: 1px solid #dbeafe;
   font-weight: 700;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease;
 }
 
 .flash-sale-grid,
@@ -385,6 +396,7 @@ a {
 .flash-item-card {
   padding: 14px;
   box-shadow: inset 0 0 0 1px rgba(15, 117, 255, 0.03);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
 }
 
 .flash-item-thumb,
@@ -430,11 +442,13 @@ a {
 
 .product-card {
   box-shadow: 0 14px 30px rgba(14, 88, 202, 0.08);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
 }
 
 .product-thumb {
   position: relative;
   height: 220px;
+  transition: transform 0.22s ease;
 }
 
 .product-badge {
@@ -459,6 +473,44 @@ a {
   justify-content: space-between;
   gap: 10px;
   margin-top: 10px;
+}
+
+.hero-mini-card:hover,
+.quick-entry-card:hover,
+.category-chip:hover,
+.flash-item-card:hover,
+.product-card:hover {
+  transform: translateY(-6px);
+}
+
+.hero-mini-card:hover {
+  box-shadow: 0 28px 52px rgba(14, 88, 202, 0.18);
+}
+
+.quick-entry-card:hover {
+  background: linear-gradient(180deg, #ffffff, #eef6ff);
+  box-shadow: 0 22px 40px rgba(14, 88, 202, 0.15);
+}
+
+.quick-entry-card:hover .quick-entry-icon {
+  transform: scale(1.08) rotate(-4deg);
+  background: linear-gradient(135deg, #bfdbfe, #dbeafe);
+}
+
+.category-chip:hover {
+  border-color: #93c5fd;
+  background: linear-gradient(135deg, #dbeafe, #ffffff);
+  box-shadow: 0 16px 28px rgba(14, 88, 202, 0.12);
+}
+
+.flash-item-card:hover,
+.product-card:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 24px 44px rgba(14, 88, 202, 0.14);
+}
+
+.product-card:hover .product-thumb {
+  transform: scale(1.03);
 }
 
 .login-page {
