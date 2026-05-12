@@ -14,6 +14,7 @@ const productSchema = new mongoose.Schema(
     attributes: { type: mongoose.Schema.Types.Mixed, default: {} },
     ratingAverage: { type: Number, default: 0 },
     ratingCount: { type: Number, default: 0 },
+    soldCount: { type: Number, default: 0 },
     isPublished: { type: Boolean, default: false },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },

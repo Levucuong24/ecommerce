@@ -1,12 +1,12 @@
 const express = require("express");
 
-const authRoutes = require("./auth.routes");
-const userRoutes = require("./user.routes");
-const productRoutes = require("./product.routes");
-const cartRoutes = require("./cart.routes");
-const orderRoutes = require("./order.routes");
-const reviewRoutes = require("./review.routes");
-const resourceRoutes = require("./resource.routes");
+const authRoutes = require("../modules/auth/auth.routes");
+const userRoutes = require("../modules/user/user.routes");
+const productRoutes = require("../modules/product/product.routes");
+const cartRoutes = require("../modules/cart/cart.routes");
+const orderRoutes = require("../modules/order/order.routes");
+const reviewRoutes = require("../modules/review/review.routes");
+const resourceRoutes = require("../modules/resource/resource.routes");
 
 const router = express.Router();
 

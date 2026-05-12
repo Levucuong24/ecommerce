@@ -1,6 +1,9 @@
+import { useNavigate } from "react-router-dom";
 import { formatPrice } from "../utils";
 
 function FlashSale({ products }) {
+  const navigate = useNavigate();
+
   return (
     <section className="flash-sale-panel">
       <div className="section-heading">
@@ -9,7 +12,12 @@ function FlashSale({ products }) {
       </div>
       <div className="flash-sale-grid">
         {products.slice(0, 4).map((product) => (
-          <article key={product.name} className="flash-item-card">
+          <article 
+            key={product.id || product.name} 
+            className="flash-item-card"
+            style={{ cursor: 'pointer' }}
+            onClick={() => product.id && navigate(`/product/${product.id}`)}
+          >
             <div className="flash-item-thumb">{product.badge}</div>
             <h3>{product.name}</h3>
             <strong>{formatPrice(product.price)}d</strong>

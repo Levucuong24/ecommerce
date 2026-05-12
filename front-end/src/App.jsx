@@ -6,6 +6,9 @@ import ForgotPasswordForm from "./features/auth/login/ForgotPasswordForm";
 import RegisterForm from "./features/auth/register/RegisterForm";
 import HomePage from "./features/home/HomePage";
 import CartPage from "./features/cart/CartPage";
+import ProductDetailPage from "./features/products/ProductDetailPage";
+import AdminPage from "./features/admin/AdminPage";
+import { useEffect } from "react";
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const allowedRoles = new Set(["admin", "staff", "user", "customer"]);
@@ -26,6 +29,14 @@ const initialRegisterData = {
 
 function App() {
   const navigate = useNavigate();
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem("user");
+    try {
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
   const [mode, setMode] = useState("login");
   const [loginData, setLoginData] = useState(initialLoginData);
   const [registerData, setRegisterData] = useState(initialRegisterData);
@@ -51,6 +62,13 @@ function App() {
 
   const goHomePage = () => {
     clearMessage();
+    navigate("/home");
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setUser(null);
     navigate("/home");
   };
 
@@ -95,8 +113,8 @@ function App() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: loginData.email,
-          password: loginData.password,
+          email: loginData.email.trim(),
+          password: loginData.password.trim(),
         }),
       });
 
@@ -121,9 +139,17 @@ function App() {
 
       if (data.user) {
         localStorage.setItem("user", JSON.stringify(data.user));
+        setUser(data.user);
         setMessage("Đăng nhập thành công");
         setMessageType("success");
-        setTimeout(() => navigate("/home"), 1000);
+        
+        setTimeout(() => {
+          if (data.user.role === "admin") {
+            navigate("/admin");
+          } else {
+            navigate("/home");
+          }
+        }, 1000);
       }
     } catch (error) {
       setMessage("Không thể kết nối đến máy chủ");
@@ -184,6 +210,7 @@ function App() {
 
       if (data.user) {
         localStorage.setItem("user", JSON.stringify(data.user));
+        setUser(data.user);
       }
 
       setMessage("Đăng ký thành công!");
@@ -210,9 +237,10 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/home" />} />
-      <Route path="/home" element={<HomePage onOpenLogin={() => openAuthPage("login")} onOpenCart={openCartPage} />} />
+      <Route path="/home" element={<HomePage user={user} onLogout={handleLogout} onOpenLogin={() => openAuthPage("login")} onOpenCart={openCartPage} />} />
       <Route path="/cart" element={<CartPage onBackHome={goHomePage} />} />
-      <Route path="/:id" element={<HomePage onOpenLogin={() => openAuthPage("login")} onOpenCart={openCartPage} />} />
+      <Route path="/product/:id" element={<ProductDetailPage user={user} onLogout={handleLogout} onOpenLogin={() => openAuthPage("login")} onOpenCart={openCartPage} />} />
+      <Route path="/:id" element={<HomePage user={user} onLogout={handleLogout} onOpenLogin={() => openAuthPage("login")} onOpenCart={openCartPage} />} />
       <Route
         path="/auth"
         element={
@@ -242,6 +270,17 @@ function App() {
               />
             )}
           </AuthShell>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <AdminPage
+            user={user}
+            onOpenLogin={() => openAuthPage("login")}
+            onOpenCart={openCartPage}
+            handleLogout={handleLogout}
+          />
         }
       />
     </Routes>

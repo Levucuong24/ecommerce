@@ -1,6 +1,22 @@
+import { useState } from "react";
 import Logo from "../../../components/Logo";
 
-function Header({ user, onOpenLogin, onOpenCart, onLogout }) {
+function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
+  const [query, setQuery] = useState("");
+
+  const handleSearch = (e) => {
+    e?.preventDefault();
+    if (onSearch) {
+      onSearch(query);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
+
   return (
     <header className="shop-header">
       <div className="shop-header-top">
@@ -36,6 +52,11 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout }) {
             <div className="user-dropdown-wrapper">
               <span className="shop-login-link" style={{ cursor: 'pointer' }}>Hi, {user.name}</span>
               <div className="user-dropdown-popup">
+                {user.role === "admin" && (
+                  <button type="button" onClick={() => window.location.href = "/admin"} className="admin-dash-btn">
+                    Quản trị hệ thống
+                  </button>
+                )}
                 <button type="button" onClick={onLogout} className="logout-btn">
                   Đăng xuất
                 </button>
@@ -54,16 +75,22 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout }) {
 
         <div className="shop-search-area">
           <div className="shop-search-box">
-            <input type="text" placeholder="Tim san pham, shop va uu dai hom nay" />
-            <button type="button">Tim kiem</button>
+            <input
+              type="text"
+              placeholder="Tim san pham, shop va uu dai hom nay"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+            <button type="button" onClick={handleSearch}>Tim kiem</button>
           </div>
 
           <div className="shop-keywords">
-            <span>Tai nghe</span>
-            <span>Điện gia dụng</span>
-            <span>Máy tính bảng</span>
-            <span>Deal 0h</span>
-            <span>Thời trang nữ</span>
+            <span onClick={() => { setQuery("Tai nghe"); onSearch?.("Tai nghe"); }}>Tai nghe</span>
+            <span onClick={() => { setQuery("Điện gia dụng"); onSearch?.("Điện gia dụng"); }}>Điện gia dụng</span>
+            <span onClick={() => { setQuery("Máy tính bảng"); onSearch?.("Máy tính bảng"); }}>Máy tính bảng</span>
+            <span onClick={() => { setQuery("Deal 0h"); onSearch?.("Deal 0h"); }}>Deal 0h</span>
+            <span onClick={() => { setQuery("Thời trang nữ"); onSearch?.("Thời trang nữ"); }}>Thời trang nữ</span>
           </div>
         </div>
 

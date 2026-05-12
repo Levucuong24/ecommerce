@@ -16,11 +16,10 @@ import {
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-function HomePage({ onOpenLogin, onOpenCart }) {
+function HomePage({ onOpenLogin, onOpenCart, user, onLogout }) {
   const navigate = useNavigate();
   const [categories, setCategories] = useState(fallbackCategories);
   const [products, setProducts] = useState(fallbackProducts);
-  const [user, setUser] = useState(null);
   const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
@@ -30,23 +29,39 @@ function HomePage({ onOpenLogin, onOpenCart }) {
     return () => clearInterval(timer);
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-    setUser(null);
-    navigate("/home");
+  const handleSearch = (keyword) => {
+    fetchProducts(keyword);
+  };
+
+  const fetchProducts = async (keyword = "") => {
+    try {
+      let url = `${apiUrl}/products?limit=6`;
+      if (keyword) {
+        url += `&keyword=${encodeURIComponent(keyword)}`;
+      }
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (!response.ok || !Array.isArray(data.items) || data.items.length === 0) {
+        return;
+      }
+
+      setProducts(
+        data.items.map((item) => ({
+          id: item._id,
+          name: item.name,
+          price: item.discountPrice || item.price || 0,
+          sold: `Đã bán ${item.soldCount >= 1000 ? (item.soldCount / 1000).toFixed(1) + 'k' : item.soldCount}`,
+          badge: buildBadge(item.price, item.discountPrice),
+          image: imageMap[item.images?.[0]] || iphone15Pro,
+        }))
+      );
+    } catch (error) {
+      // Keep fallback products when backend is unavailable.
+    }
   };
 
   useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (e) {
-        console.error("Invalid user data in local storage");
-      }
-    }
-
     const fetchCategories = async () => {
       try {
         const response = await fetch(`${apiUrl}/categories?limit=8`);
@@ -62,29 +77,6 @@ function HomePage({ onOpenLogin, onOpenCart }) {
       }
     };
 
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch(`${apiUrl}/products?limit=6`);
-        const data = await response.json();
-
-        if (!response.ok || !Array.isArray(data.items) || data.items.length === 0) {
-          return;
-        }
-
-        setProducts(
-          data.items.map((item) => ({
-            name: item.name,
-            price: item.discountPrice || item.price || 0,
-            sold: `Ton kho ${item.stock ?? 0}`,
-            badge: buildBadge(item.price, item.discountPrice),
-            image: imageMap[item.images?.[0]] || iphone15Pro,
-          }))
-        );
-      } catch (error) {
-        // Keep fallback products when backend is unavailable.
-      }
-    };
-
     fetchCategories();
     fetchProducts();
   }, []);
@@ -95,8 +87,10 @@ function HomePage({ onOpenLogin, onOpenCart }) {
         user={user}
         onOpenLogin={onOpenLogin}
         onOpenCart={onOpenCart}
-        onLogout={handleLogout}
+        onLogout={onLogout}
+        onSearch={handleSearch}
       />
+
 
       <HeroCarousel
         currentSlide={currentSlide}

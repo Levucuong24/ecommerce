@@ -1,6 +1,9 @@
+import { useNavigate } from "react-router-dom";
 import { formatPrice } from "../utils";
 
 function ProductGrid({ products }) {
+  const navigate = useNavigate();
+
   return (
     <section className="product-panel">
       <div className="section-heading">
@@ -9,7 +12,12 @@ function ProductGrid({ products }) {
 
       <div className="product-grid">
         {products.map((product) => (
-          <article key={product.name} className="product-card">
+          <article 
+            key={product.id || product.name} 
+            className="product-card"
+            style={{ cursor: 'pointer' }}
+            onClick={() => product.id && navigate(`/product/${product.id}`)}
+          >
             <div className="product-thumb">
               <img src={product.image} alt={product.name} className="product-image" />
               <span className="product-badge">{product.badge}</span>
