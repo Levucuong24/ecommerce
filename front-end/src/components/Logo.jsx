@@ -1,24 +1,18 @@
-import { useState } from "react";
-
-const logoSrc = "/images/Screenshot%202026-05-10%20234635.png";
-
 function Logo({ className = "", showText = true }) {
-  const [hasError, setHasError] = useState(false);
-
   return (
     <div className={["site-logo", className].filter(Boolean).join(" ")}>
-      {!hasError ? (
+      <div className="logo-container">
         <img
-          src={logoSrc}
-          alt="Ecommerce logo"
-          className="site-logo-image"
-          onError={() => setHasError(true)}
+          src="/images/logoapp.png"
+          alt="Ecommerce Logo"
+          className="logo-image"
         />
-      ) : (
-        <div className="site-logo-fallback">E</div>
-      )}
-
-      {showText ? <span className="site-logo-text">Ecommerce</span> : null}
+      </div>
+      {showText ? (
+        <span className="site-logo-text">
+          Ecommerce<span className="dot">.</span>
+        </span>
+      ) : null}
     </div>
   );
 }

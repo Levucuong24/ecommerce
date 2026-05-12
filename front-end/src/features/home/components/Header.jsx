@@ -60,10 +60,10 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout }) {
 
           <div className="shop-keywords">
             <span>Tai nghe</span>
-            <span>Dien gia dung</span>
-            <span>May tinh bang</span>
+            <span>Điện gia dụng</span>
+            <span>Máy tính bảng</span>
             <span>Deal 0h</span>
-            <span>Thoi trang nu</span>
+            <span>Thời trang nữ</span>
           </div>
         </div>
 

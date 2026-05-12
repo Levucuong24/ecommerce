@@ -6,34 +6,34 @@ function AuthShell({ mode, onSwitchMode, onBackHome, children }) {
       <section className="brand-panel">
         <div className="brand-copy">
           <Logo className="brand-logo" />
-          <p className="brand-tag">Ecommerce Admin</p>
+          <p className="brand-tag">Ecommerce Platform</p>
           <h1>
             {mode === "login" 
-              ? "Chao mung ban quay tro lai" 
+              ? "Chào mừng bạn quay trở lại" 
               : mode === "forgotPassword" 
-                ? "Khoi phuc mat khau" 
-                : "Tao tai khoan moi"}
+                ? "Khôi phục mật khẩu" 
+                : "Tạo tài khoản mới"}
           </h1>
           <p className="brand-text">
             {mode === "login"
-              ? "Dang nhap de quan ly don hang, cap nhat san pham va theo doi tinh hinh kinh doanh cua cua hang."
+              ? "Đăng nhập để quản lý đơn hàng, cập nhật sản phẩm và theo dõi tình hình kinh doanh của cửa hàng bạn một cách hiệu quả."
               : mode === "forgotPassword"
-                ? "Nhap email cua ban de nhan ma khoi phuc mat khau."
-                : "Dang ky tai khoan de bat dau mua sam, quan ly thong tin ca nhan va theo doi don hang cua ban."}
+                ? "Nhập email của bạn để nhận mã khôi phục mật khẩu và tiếp tục trải nghiệm dịch vụ."
+                : "Tham gia cùng chúng tôi để bắt đầu mua sắm, quản lý thông tin cá nhân và nhận những ưu đãi hấp dẫn nhất."}
           </p>
         </div>
 
         <div className="brand-metrics">
           <article className="metric-card">
-            <span>Hom nay</span>
-            <strong>128 don hang</strong>
+            <span>Hôm nay</span>
+            <strong>128 đơn hàng</strong>
           </article>
           <article className="metric-card">
             <span>Doanh thu</span>
-            <strong>84.500.000 VND</strong>
+            <strong>84.500.000đ</strong>
           </article>
           <article className="metric-card">
-            <span>Khach quay lai</span>
+            <span>Khách quay lại</span>
             <strong>64%</strong>
           </article>
         </div>
