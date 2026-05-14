@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import AddProductForm from "./AddProductForm";
+import { DATA_EVENTS, subscribeDataChanged } from "../../../utils/realtimeEvents";
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -35,6 +36,15 @@ function StoreDashboard({ store, token, onStoreUpdate }) {
   useEffect(() => {
     if (store?._id) {
       fetchDashboardData();
+
+      // Lắng nghe sự kiện để cập nhật dữ liệu bảng điều khiển ngay lập tức
+      const unsubscribe = subscribeDataChanged((event) => {
+        if (event.type === DATA_EVENTS.PRODUCTS || event.type === DATA_EVENTS.STORES) {
+          fetchDashboardData();
+        }
+      });
+
+      return () => unsubscribe();
     }
   }, [store]);
 
