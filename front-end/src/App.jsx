@@ -9,6 +9,7 @@ import CartPage from "./features/cart/CartPage";
 import ProductDetailPage from "./features/products/ProductDetailPage";
 import AdminPage from "./features/admin/AdminPage";
 import StaffPage from "./features/staff/StaffPage";
+import { clearAuthSession, getAuthUser, saveAuthSession } from "./utils/authStorage";
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const allowedRoles = new Set(["admin", "staff", "customer"]);
@@ -29,14 +30,7 @@ const initialRegisterData = {
 
 function App() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem("user");
-    try {
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [user, setUser] = useState(() => getAuthUser());
   const [mode, setMode] = useState("login");
   const [loginData, setLoginData] = useState(initialLoginData);
   const [registerData, setRegisterData] = useState(initialRegisterData);
@@ -72,8 +66,7 @@ function App() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    clearAuthSession();
     setUser(null);
     navigate("/home");
   };
@@ -134,20 +127,15 @@ function App() {
       }
 
       if (!allowedRoles.has(userRole)) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+        clearAuthSession();
         setUser(null);
         setMessage("Tai khoan cua ban khong co quyen truy cap");
         setMessageType("error");
         return;
       }
 
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-      }
-
       if (data.user) {
-        localStorage.setItem("user", JSON.stringify(data.user));
+        saveAuthSession(data.token, data.user, loginData.remember);
         setUser(data.user);
         setMessage("Dang nhap thanh cong");
         setMessageType("success");
@@ -209,12 +197,8 @@ function App() {
         return;
       }
 
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-      }
-
       if (data.user) {
-        localStorage.setItem("user", JSON.stringify(data.user));
+        saveAuthSession(data.token, data.user);
         setUser(data.user);
       }
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { createProduct } from "../services/storeApi";
+import { DATA_EVENTS, emitDataChanged, subscribeDataChanged } from "../../../utils/realtimeEvents";
 
 function AddProductForm({ token, onSuccess }) {
   const [categories, setCategories] = useState([]);
@@ -27,6 +28,12 @@ function AddProductForm({ token, onSuccess }) {
       }
     };
     fetchCategories();
+
+    return subscribeDataChanged((event) => {
+      if (event?.type === DATA_EVENTS.CATEGORIES) {
+        fetchCategories();
+      }
+    });
   }, []);
 
   const handleChange = (e) => {
@@ -83,7 +90,8 @@ function AddProductForm({ token, onSuccess }) {
         images: images,
       };
       
-      await createProduct(token, productData);
+      const createdProduct = await createProduct(token, productData);
+      emitDataChanged(DATA_EVENTS.PRODUCTS, { productId: createdProduct?._id });
       setMessage("Thêm sản phẩm thành công!");
       setTimeout(() => {
         onSuccess();

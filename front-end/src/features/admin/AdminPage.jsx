@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import AdminHeader from "./components/AdminHeader";
+import { getAuthToken } from "../../utils/authStorage";
+import { DATA_EVENTS, emitDataChanged, subscribeDataChanged } from "../../utils/realtimeEvents";
 
 const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
   const [users, setUsers] = useState([]);
@@ -23,10 +25,22 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
     }
   }, [user, activeTab]);
 
+  useEffect(() => {
+    if (user?.role !== "admin") return undefined;
+
+    return subscribeDataChanged((event) => {
+      if (event?.type === DATA_EVENTS.USERS && activeTab === "users") fetchUsers();
+      if (event?.type === DATA_EVENTS.STORES && activeTab === "stores") fetchStores();
+      if (event?.type === DATA_EVENTS.CATEGORIES && activeTab === "categories") {
+        fetchCategories();
+      }
+    });
+  }, [user, activeTab]);
+
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
+      const token = getAuthToken();
       const response = await fetch(`${API_URL}/users`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -49,7 +63,7 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
   const fetchStores = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
+      const token = getAuthToken();
       const response = await fetch(`${API_URL}/stores`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -89,7 +103,7 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
     
     setUpdating("category");
     try {
-      const token = localStorage.getItem("token");
+      const token = getAuthToken();
       const response = await fetch(`${API_URL}/categories`, {
         method: "POST",
         headers: {
@@ -103,6 +117,7 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
       
       alert("Thêm danh mục thành công!");
       setNewCategoryName("");
+      emitDataChanged(DATA_EVENTS.CATEGORIES);
       fetchCategories();
     } catch (err) {
       alert(err.message);
@@ -114,7 +129,7 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
   const handleUpdateRole = async (userId, newRole) => {
     setUpdating(userId);
     try {
-      const token = localStorage.getItem("token");
+      const token = getAuthToken();
       const response = await fetch(`${API_URL}/users/${userId}/role`, {
         method: "PATCH",
         headers: {
@@ -131,6 +146,7 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
 
       // Update local state
       setUsers(users.map(u => u._id === userId ? { ...u, role: newRole } : u));
+      emitDataChanged(DATA_EVENTS.USERS, { userId, role: newRole });
       alert("Cập nhật quyền thành công!");
     } catch (err) {
       alert(`Lỗi: ${err.message}`);
@@ -142,7 +158,7 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
   const handleUpdateStoreStatus = async (storeId, status) => {
     setUpdating(storeId);
     try {
-      const token = localStorage.getItem("token");
+      const token = getAuthToken();
       const response = await fetch(`${API_URL}/stores/${storeId}/status`, {
         method: "PATCH",
         headers: {
@@ -157,6 +173,7 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
       }
 
       setStores(stores.map(s => s._id === storeId ? { ...s, status } : s));
+      emitDataChanged(DATA_EVENTS.STORES, { storeId, status });
       alert("Cập nhật trạng thái cửa hàng thành công!");
     } catch (err) {
       alert(`Lỗi: ${err.message}`);

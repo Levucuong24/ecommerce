@@ -93,6 +93,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
   };
 
   const currentImageUrl = getImageUrl(product?.images?.[currentImageIdx]);
+  const variantImageUrl = getImageUrl(product?.images?.[0]);
 
   return (
     <main className="product-detail-page shopee-inspired">
@@ -215,7 +216,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
                 <div className="variant-options">
                   {["Đèn xoay nước", "Đèn phía Bắc", "gợn nước"].map((variant, idx) => (
                     <button key={idx} className="variant-btn">
-                      <img src={productImage} alt={variant} />
+                      <img src={variantImageUrl} alt={variant} />
                       {variant}
                     </button>
                   ))}

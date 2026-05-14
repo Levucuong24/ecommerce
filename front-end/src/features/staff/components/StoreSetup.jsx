@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createStore } from "../services/storeApi";
+import { DATA_EVENTS, emitDataChanged } from "../../../utils/realtimeEvents";
 
 function StoreSetup({ token, onStoreCreated }) {
   const [formData, setFormData] = useState({
@@ -50,6 +51,7 @@ function StoreSetup({ token, onStoreCreated }) {
 
     try {
       const newStore = await createStore(token, { ...formData, logo });
+      emitDataChanged(DATA_EVENTS.STORES, { storeId: newStore?._id });
       onStoreCreated(newStore);
     } catch (err) {
       setMessage(err.message || "Không thể tạo cửa hàng");
