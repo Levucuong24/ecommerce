@@ -11,7 +11,13 @@ const getReviewById = asyncHandler(async (req, res) => {
     res.json(data);
 });
 
+const createReview = asyncHandler(async (req, res) => {
+  const data = await reviewService.createReview(req.user.id, req.body);
+  res.status(201).json(data);
+});
+
 module.exports = {
   getReviews,
   getReviewById,
+  createReview,
 };

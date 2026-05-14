@@ -2140,6 +2140,68 @@ a {
   background: #dbeafe;
 }
 
+.notification-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+  text-align: left;
+  margin-top: 15px;
+}
+
+.notification-item {
+  padding: 12px;
+  border-radius: 8px;
+  background: #f8fafc;
+  transition: background 0.2s;
+  cursor: pointer;
+  border-left: 4px solid transparent;
+}
+
+.notification-item.unread {
+  background: #eff6ff;
+  border-left-color: #3b82f6;
+}
+
+.notification-item:hover {
+  background: #f1f5f9;
+}
+
+.notification-item h4 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.notification-item p {
+  margin: 0 0 6px !important;
+  font-size: 0.9rem !important;
+  font-weight: 400 !important;
+  color: #64748b;
+  line-height: 1.4;
+  text-align: left !important;
+}
+
+.notification-item .time {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.notification-badge {
+  position: absolute;
+  top: 0;
+  right: -12px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 10px;
+  border: 1.5px solid #fff;
+}
+
 .shop-cart-wrapper {
   position: relative;
   display: inline-flex;

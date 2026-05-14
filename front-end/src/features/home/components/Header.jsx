@@ -1,8 +1,88 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Logo from "../../../components/Logo";
+import { getAuthToken } from "../../../utils/authStorage";
+import { DATA_EVENTS, subscribeDataChanged } from "../../../utils/realtimeEvents";
+
+const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
   const [query, setQuery] = useState("");
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (user) {
+      fetchNotifications();
+      
+      // Lắng nghe sự kiện dữ liệu thay đổi để cập nhật thông báo ngay lập tức
+      const unsubscribe = subscribeDataChanged((event) => {
+        if (event.type === DATA_EVENTS.PRODUCTS) {
+          // Khi có sản phẩm mới được đăng, tải lại thông báo
+          fetchNotifications();
+        }
+      });
+
+      // Thiết lập polling mỗi 10 giây để cập nhật thông báo từ server
+      const interval = setInterval(fetchNotifications, 10000);
+      return () => {
+        unsubscribe();
+        clearInterval(interval);
+      };
+    }
+  }, [user]);
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/notifications`, {
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setNotifications(data);
+        setUnreadCount(data.filter((n) => !n.isRead).length);
+      }
+    } catch (error) {
+      console.error("Lỗi khi tải thông báo:", error);
+    }
+  };
+
+  const handleMarkAsRead = async (id) => {
+    try {
+      const response = await fetch(`${apiUrl}/notifications/${id}/read`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+      });
+      if (response.ok) {
+        setNotifications((prev) =>
+          prev.map((n) => (n._id === id ? { ...n, isRead: true } : n))
+        );
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      }
+    } catch (error) {
+      console.error("Lỗi khi đánh dấu đã đọc:", error);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/notifications/mark-all-read`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+      });
+      if (response.ok) {
+        setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+        setUnreadCount(0);
+      }
+    } catch (error) {
+      console.error("Lỗi khi đánh dấu tất cả đã đọc:", error);
+    }
+  };
 
   const handleSearch = (event) => {
     event?.preventDefault();
@@ -36,13 +116,48 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
         </div>
         <div className="shop-top-links">
           <div className="notification-wrapper">
-            <span className="notification-trigger">Thong bao</span>
+            <span className="notification-trigger">
+              Thong bao
+              {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
+            </span>
             <div className="notification-popup">
-              <img src="/images/logothongbao.png" alt="Thong bao" className="notification-empty-img" />
               {user ? (
-                <p>Chua co thong bao moi</p>
+                <>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
+                    <h3 style={{ margin: 0, fontSize: "1.1rem" }}>Thông báo mới nhận</h3>
+                    {unreadCount > 0 && (
+                      <button 
+                        onClick={handleMarkAllRead}
+                        style={{ background: "none", color: "var(--primary)", fontSize: "0.85rem", fontWeight: "500" }}
+                      >
+                        Đánh dấu tất cả đã đọc
+                      </button>
+                    )}
+                  </div>
+                  {notifications.length > 0 ? (
+                    <div className="notification-list">
+                      {notifications.map((notif) => (
+                        <div 
+                          key={notif._id} 
+                          className={`notification-item ${notif.isRead ? "" : "unread"}`}
+                          onClick={() => !notif.isRead && handleMarkAsRead(notif._id)}
+                        >
+                          <h4>{notif.title}</h4>
+                          <p>{notif.message}</p>
+                          <span className="time">{new Date(notif.createdAt).toLocaleString("vi-VN")}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: "center", padding: "20px 0" }}>
+                      <img src="/images/logothongbao.png" alt="Thong bao" className="notification-empty-img" />
+                      <p>Chưa có thông báo mới</p>
+                    </div>
+                  )}
+                </>
               ) : (
                 <>
+                  <img src="/images/logothongbao.png" alt="Thong bao" className="notification-empty-img" />
                   <p>Dang nhap de xem Thong bao</p>
                   <div className="notification-actions">
                     <button type="button" onClick={onOpenLogin} className="notification-login-btn">
@@ -63,6 +178,9 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
                 Hi, {user.name}
               </span>
               <div className="user-dropdown-popup">
+                <button type="button" onClick={() => window.location.href = "/following-shops"} className="admin-dash-btn">
+                  Shop đang theo dõi
+                </button>
                 {(user.role === "admin" || user.role === "staff") && (
                   <button type="button" onClick={openDashboard} className="admin-dash-btn">
                     {user.role === "admin" ? "Quan tri he thong" : "Trang Staff"}

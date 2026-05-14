@@ -11,9 +11,19 @@ const getMyStore = asyncHandler(async (req, res) => {
   res.json(store);
 });
 
+const getStoreById = asyncHandler(async (req, res) => {
+  const store = await storeService.getStoreById(req.params.id);
+  res.json(store);
+});
+
 const getStoreProducts = asyncHandler(async (req, res) => {
   const products = await storeService.getStoreProducts(req.params.id);
   res.json(products);
+});
+
+const getStoreReviews = asyncHandler(async (req, res) => {
+  const reviews = await storeService.getStoreReviews(req.params.id);
+  res.json(reviews);
 });
 
 const updateStore = asyncHandler(async (req, res) => {
@@ -33,11 +43,25 @@ const updateStoreStatus = asyncHandler(async (req, res) => {
   res.json(store);
 });
 
+const toggleFollowStore = asyncHandler(async (req, res) => {
+  const result = await storeService.toggleFollowStore(req.user.id, req.params.id);
+  res.json(result);
+});
+
+const getFollowingStores = asyncHandler(async (req, res) => {
+  const stores = await storeService.getFollowingStores(req.user.id);
+  res.json(stores);
+});
+
 module.exports = {
   createStore,
   getMyStore,
+  getStoreById,
   getStoreProducts,
+  getStoreReviews,
   updateStore,
   getAllStores,
   updateStoreStatus,
+  toggleFollowStore,
+  getFollowingStores,
 };

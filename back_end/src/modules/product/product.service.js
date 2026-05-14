@@ -1,5 +1,6 @@
 const { Product, Store } = require("../../models");
 const { listResources, getResourceById } = require("../resource/resource.service");
+const notificationService = require("../notification/notification.service");
 const slugify = require("../../utils/slugify");
 const mongoose = require("mongoose");
 
@@ -12,28 +13,48 @@ const getProductById = async (id) => {
     error.statusCode = 404;
     throw error;
   }
-  
-  // Calculate shop stats
-  const [totalProducts, stats] = await Promise.all([
-    Product.countDocuments({ createdBy: product.createdBy?._id }),
-    Product.aggregate([
-      { $match: { createdBy: product.createdBy?._id } },
-      { $group: { _id: null, totalRatings: { $sum: "$ratingCount" }, avgRating: { $avg: "$ratingAverage" } } }
-    ])
-  ]);
-
-  const productData = product.toObject();
-  productData.shop = {
+  let shopData = {
     name: product.createdBy?.name || "Shop Name",
     avatar: product.createdBy?.avatar,
-    totalProducts,
-    totalRatings: stats[0]?.totalRatings || 0,
-    avgRating: stats[0]?.avgRating || 0,
     joinedAt: product.createdBy?.createdAt,
     responseTime: "trong vài giờ",
     responseRate: "99%",
-    followerCount: "15,2k"
+    followerCount: 0,
+    followers: [],
+    totalProducts: 0,
+    totalRatings: 0,
+    avgRating: 0,
   };
+
+  if (product.storeId) {
+    const store = await Store.findById(product.storeId);
+    if (store) {
+      const [totalProducts, stats] = await Promise.all([
+        Product.countDocuments({ storeId: store._id }),
+        Product.aggregate([
+          { $match: { storeId: store._id } },
+          { $group: { _id: null, totalRatings: { $sum: "$ratingCount" }, avgRating: { $avg: "$ratingAverage" } } }
+        ])
+      ]);
+
+      shopData = {
+        _id: store._id,
+        name: store.name,
+        avatar: store.logo || product.createdBy?.avatar,
+        joinedAt: store.createdAt,
+        followerCount: store.followerCount || 0,
+        followers: store.followers || [],
+        totalProducts,
+        totalRatings: stats[0]?.totalRatings || 0,
+        avgRating: stats[0]?.avgRating || 0,
+        responseTime: "trong vài giờ",
+        responseRate: "99%",
+      };
+    }
+  }
+
+  const productData = product.toObject();
+  productData.shop = shopData;
 
   return productData;
 };
@@ -66,6 +87,11 @@ const createProduct = async (userId, productData) => {
     slug,
     createdBy: userId,
   });
+
+  // Gửi thông báo cho người theo dõi
+  if (product.storeId) {
+    notificationService.createFollowerNotifications(product.storeId, product);
+  }
 
   return product;
 };

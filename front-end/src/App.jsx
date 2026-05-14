@@ -7,6 +7,8 @@ import RegisterForm from "./features/auth/register/RegisterForm";
 import HomePage from "./features/home/HomePage";
 import CartPage from "./features/cart/CartPage";
 import ProductDetailPage from "./features/products/ProductDetailPage";
+import ShopPage from "./features/shop/ShopPage";
+import FollowingShopsPage from "./features/shop/FollowingShopsPage";
 import AdminPage from "./features/admin/AdminPage";
 import StaffPage from "./features/staff/StaffPage";
 import { clearAuthSession, getAuthUser, saveAuthSession } from "./utils/authStorage";
@@ -242,6 +244,28 @@ function App() {
         path="/product/:id"
         element={
           <ProductDetailPage
+            user={user}
+            onLogout={handleLogout}
+            onOpenLogin={() => openAuthPage("login")}
+            onOpenCart={openCartPage}
+          />
+        }
+      />
+      <Route
+        path="/shop/:id"
+        element={
+          <ShopPage
+            user={user}
+            onLogout={handleLogout}
+            onOpenLogin={() => openAuthPage("login")}
+            onOpenCart={openCartPage}
+          />
+        }
+      />
+      <Route
+        path="/following-shops"
+        element={
+          <FollowingShopsPage
             user={user}
             onLogout={handleLogout}
             onOpenLogin={() => openAuthPage("login")}

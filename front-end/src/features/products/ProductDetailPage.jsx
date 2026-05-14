@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Header from "../home/components/Header";
-
+import { getAuthToken } from "../../utils/authStorage";
 import { imageMap, formatPrice } from "../home/utils";
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
@@ -12,6 +12,24 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
+  const [reviews, setReviews] = useState([]);
+  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: "" });
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState("");
+  const [isFollowingStore, setIsFollowingStore] = useState(false);
+  const [isSubmittingFollow, setIsSubmittingFollow] = useState(false);
+
+  const fetchReviews = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/reviews?productId=${id}`);
+      const data = await response.json();
+      if (response.ok) {
+        setReviews(data.items || data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+    }
+  };
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -24,6 +42,11 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
         }
 
         setProduct(data);
+        if (data.shop && user) {
+          const userId = user.id || user._id;
+          setIsFollowingStore(data.shop.followers?.includes(userId));
+        }
+        fetchReviews();
       } catch (error) {
         console.error("Error fetching product details:", error);
       } finally {
@@ -33,6 +56,83 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
 
     fetchProduct();
   }, [id]);
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (!user) {
+      setReviewMessage("Vui lòng đăng nhập để đánh giá.");
+      return;
+    }
+    setIsSubmittingReview(true);
+    setReviewMessage("");
+    try {
+      const response = await fetch(`${apiUrl}/reviews`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+        body: JSON.stringify({
+          productId: id,
+          rating: reviewForm.rating,
+          comment: reviewForm.comment,
+        }),
+      });
+
+      if (response.ok) {
+        setReviewForm({ rating: 5, comment: "" });
+        setReviewMessage("Đánh giá thành công!");
+        fetchReviews();
+        // Also refresh product to update rating count/average
+        const prodRes = await fetch(`${apiUrl}/products/${id}`);
+        if (prodRes.ok) {
+          const prodData = await prodRes.json();
+          setProduct(prodData);
+        }
+      } else {
+        const data = await response.json();
+        setReviewMessage(data.message || "Đã xảy ra lỗi.");
+      }
+    } catch (error) {
+      setReviewMessage("Không thể kết nối đến máy chủ.");
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
+  const handleFollowShop = async () => {
+    if (!product || !product.shop) return;
+    if (!user) {
+      onOpenLogin();
+      return;
+    }
+    setIsSubmittingFollow(true);
+    try {
+      const response = await fetch(`${apiUrl}/stores/${product.shop._id || product.storeId}/follow`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setIsFollowingStore(data.isFollowing);
+        setProduct(prev => ({
+          ...prev,
+          shop: {
+            ...prev.shop,
+            followerCount: data.followerCount,
+            followers: data.isFollowing ? [...(prev.shop.followers || []), user.id || user._id] : (prev.shop.followers || []).filter(id => id !== (user.id || user._id))
+          }
+        }));
+      }
+    } catch (error) {
+      console.error("Lỗi khi theo dõi cửa hàng:", error);
+    } finally {
+      setIsSubmittingFollow(false);
+    }
+  };
 
   const handleSearch = (keyword) => {
     navigate(`/home`);
@@ -107,6 +207,30 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
       />
 
       <section className="content-shell product-detail-container">
+        <div 
+          className="back-to-home" 
+          onClick={() => navigate("/home")}
+          style={{ 
+            display: "inline-flex", 
+            alignItems: "center", 
+            gap: "5px", 
+            color: "var(--text-secondary)", 
+            cursor: "pointer", 
+            marginBottom: "15px",
+            fontSize: "14px",
+            fontWeight: "500",
+            transition: "color 0.2s"
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.color = "var(--primary)"}
+          onMouseLeave={(e) => e.currentTarget.style.color = "var(--text-secondary)"}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          Quay lại Trang Chủ
+        </div>
+
         <div className="product-detail-card">
           <div className="product-detail-visuals">
             <div className="main-image-wrapper">
@@ -263,13 +387,25 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
                 <div className="shop-name">{product.shop.name}</div>
                 <div className="shop-online-status">Online 22 phút trước</div>
                 <div className="shop-actions">
-                  <button className="shop-chat-btn">
+                  <button 
+                    className="shop-view-btn" 
+                    onClick={handleFollowShop}
+                    disabled={isSubmittingFollow}
+                    style={{ background: isFollowingStore ? "var(--background-alt)" : "white", color: isFollowingStore ? "var(--text-secondary)" : "var(--text-main)", border: "1px solid var(--border-color)" }}
+                  >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                      {isFollowingStore ? (
+                        <path d="M20 6L9 17l-5-5"></path>
+                      ) : (
+                        <>
+                          <line x1="12" y1="5" x2="12" y2="19"></line>
+                          <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </>
+                      )}
                     </svg>
-                    Chat Ngay
+                    {isFollowingStore ? "Đang Theo Dõi" : "Theo Dõi"}
                   </button>
-                  <button className="shop-view-btn">
+                  <button className="shop-view-btn" onClick={() => navigate(`/shop/${product.storeId || product.shop?._id || product.shop}`)}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="12" cy="12" r="10"></circle>
                       <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
@@ -328,6 +464,81 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
           <h3 style={{ marginTop: '30px' }}>MÔ TẢ SẢN PHẨM</h3>
           <div className="description-content">
             {product.description || "Chưa có mô tả cho sản phẩm này."}
+          </div>
+        </div>
+
+        <div className="product-reviews-panel" style={{ marginTop: "20px", background: "var(--surface)", padding: "20px", borderRadius: "var(--radius-md)", boxShadow: "var(--shadow-sm)" }}>
+          <h3>ĐÁNH GIÁ SẢN PHẨM</h3>
+          
+          {/* Review Form */}
+          <div className="review-form-container" style={{ marginBottom: "30px", paddingBottom: "20px", borderBottom: "1px solid var(--border-color)" }}>
+            {user ? (
+              <form onSubmit={handleReviewSubmit} className="review-form">
+                <div style={{ marginBottom: "15px" }}>
+                  <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>Chọn số sao:</label>
+                  <div className="star-selector" style={{ fontSize: "24px", color: "var(--warning)", cursor: "pointer" }}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <span
+                        key={star}
+                        onClick={() => setReviewForm({ ...reviewForm, rating: star })}
+                        style={{ opacity: star <= reviewForm.rating ? 1 : 0.3 }}
+                      >
+                        ★
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ marginBottom: "15px" }}>
+                  <textarea
+                    value={reviewForm.comment}
+                    onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })}
+                    placeholder="Hãy chia sẻ nhận xét của bạn về sản phẩm này nhé..."
+                    style={{ width: "100%", minHeight: "100px", padding: "10px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-color)", resize: "vertical" }}
+                    required
+                  ></textarea>
+                </div>
+                <button type="submit" disabled={isSubmittingReview} className="primary-btn">
+                  {isSubmittingReview ? "Đang gửi..." : "Gửi Đánh Giá"}
+                </button>
+                {reviewMessage && (
+                  <p style={{ marginTop: "10px", color: reviewMessage.includes("thành công") ? "var(--success)" : "var(--error)" }}>
+                    {reviewMessage}
+                  </p>
+                )}
+              </form>
+            ) : (
+              <div style={{ textAlign: "center", padding: "20px", background: "var(--background-alt)", borderRadius: "var(--radius-sm)" }}>
+                <p>Vui lòng đăng nhập để gửi đánh giá</p>
+                <button onClick={onOpenLogin} className="primary-btn" style={{ marginTop: "10px" }}>Đăng nhập</button>
+              </div>
+            )}
+          </div>
+
+          {/* Review List */}
+          <div className="review-list">
+            {reviews.length === 0 ? (
+              <p style={{ textAlign: "center", color: "var(--text-secondary)" }}>Chưa có đánh giá nào. Hãy là người đầu tiên đánh giá sản phẩm này!</p>
+            ) : (
+              reviews.map((review, index) => (
+                <div key={review._id || index} className="review-item" style={{ marginBottom: "20px", paddingBottom: "20px", borderBottom: "1px solid var(--border-color)" }}>
+                  <div style={{ display: "flex", alignItems: "center", marginBottom: "5px" }}>
+                    <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "var(--primary-light)", display: "flex", alignItems: "center", justifyContent: "center", marginRight: "10px", fontWeight: "bold" }}>
+                      {(review.userId?.name || "U")[0].toUpperCase()}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: "bold" }}>{review.userId?.name || "Người dùng"}</div>
+                      <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                        {new Date(review.createdAt).toLocaleDateString('vi-VN')}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ margin: "10px 0" }}>
+                    {renderStars(review.rating)}
+                  </div>
+                  <p style={{ margin: 0, color: "var(--text-primary)", lineHeight: "1.5" }}>{review.comment}</p>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </section>

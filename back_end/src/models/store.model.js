@@ -10,6 +10,8 @@ const storeSchema = new mongoose.Schema(
     banner: String,
     ownerId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     status: { type: String, enum: ["pending", "active", "inactive"], default: "pending" },
+    followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    followerCount: { type: Number, default: 0 },
     createdAt: { type: Date, default: Date.now },
   },
   { versionKey: false }
