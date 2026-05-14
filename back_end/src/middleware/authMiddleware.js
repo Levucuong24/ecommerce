@@ -20,6 +20,7 @@ const protect = (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
+    req.user.id = decoded.userId; // Normalize id
     next();
   } catch (error) {
     return res.status(401).json({

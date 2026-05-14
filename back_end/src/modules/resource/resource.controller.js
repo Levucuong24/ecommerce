@@ -13,7 +13,14 @@ const createDetailHandler = (Model) =>
     res.json(data);
   });
 
+const createResourceHandler = (Model) =>
+  asyncHandler(async (req, res) => {
+    const data = await resourceService.createResource(Model, req.body);
+    res.status(201).json(data);
+  });
+
 module.exports = {
   createListHandler,
   createDetailHandler,
+  createResourceHandler,
 };

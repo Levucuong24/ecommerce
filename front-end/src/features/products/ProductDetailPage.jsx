@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Header from "../home/components/Header";
-import iphone15Pro from "../../assets/images/iphone15pro.png";
+
 import { imageMap, formatPrice } from "../home/utils";
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
@@ -11,6 +11,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [currentImageIdx, setCurrentImageIdx] = useState(0);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -33,15 +34,8 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
     fetchProduct();
   }, [id]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-    setUser(null);
-    navigate("/home");
-  };
-
   const handleSearch = (keyword) => {
-    navigate(`/home?keyword=${encodeURIComponent(keyword)}`);
+    navigate(`/home`);
   };
 
   if (loading) {
@@ -83,15 +77,31 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
     );
   };
 
-  const productImage = imageMap[product.images?.[0]] || iphone15Pro;
+  const nextImage = () => {
+    if (!product?.images?.length) return;
+    setCurrentImageIdx((prev) => (prev + 1) % product.images.length);
+  };
+
+  const prevImage = () => {
+    if (!product?.images?.length) return;
+    setCurrentImageIdx((prev) => (prev - 1 + product.images.length) % product.images.length);
+  };
+
+  const getImageUrl = (img) => {
+    if (!img) return "/images/iphone15pro.png";
+    return imageMap[img] || img;
+  };
+
+  const currentImageUrl = getImageUrl(product?.images?.[currentImageIdx]);
 
   return (
     <main className="product-detail-page shopee-inspired">
+      {/* ... Header ... */}
       <Header
         user={user}
         onOpenLogin={onOpenLogin}
         onOpenCart={onOpenCart}
-        onLogout={handleLogout}
+        onLogout={onLogout}
         onSearch={handleSearch}
       />
 
@@ -99,18 +109,23 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
         <div className="product-detail-card">
           <div className="product-detail-visuals">
             <div className="main-image-wrapper">
-              <img src={productImage} alt={product.name} className="main-product-image" />
+              <img src={currentImageUrl} alt={product.name} className="main-product-image" />
             </div>
             <div className="image-navigation">
-              <button className="nav-btn prev">{"<"}</button>
+              <button className="nav-btn prev" onClick={prevImage}>{"<"}</button>
               <div className="image-thumbnails">
                 {(product.images?.length > 0 ? product.images : [null, null, null, null, null]).map((img, idx) => (
-                  <div key={idx} className={`thumbnail ${idx === 0 ? 'active' : ''}`}>
-                    <img src={img ? (imageMap[img] || img) : iphone15Pro} alt={`${product.name} ${idx}`} />
+                  <div 
+                    key={idx} 
+                    className={`thumbnail ${idx === currentImageIdx ? 'active' : ''}`}
+                    onClick={() => setCurrentImageIdx(idx)}
+                    onMouseEnter={() => setCurrentImageIdx(idx)}
+                  >
+                    <img src={getImageUrl(img)} alt={`${product.name} ${idx}`} />
                   </div>
                 ))}
               </div>
-              <button className="nav-btn next">{">"}</button>
+              <button className="nav-btn next" onClick={nextImage}>{">"}</button>
             </div>
             <div className="social-share-row">
               <div className="share-links">

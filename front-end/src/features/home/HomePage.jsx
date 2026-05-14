@@ -1,25 +1,36 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import iphone15Pro from "../../assets/images/iphone15pro.png";
+
 import Header from "./components/Header";
 import HeroCarousel from "./components/HeroCarousel";
 import CategoryList from "./components/CategoryList";
 import FlashSale from "./components/FlashSale";
 import ProductGrid from "./components/ProductGrid";
-import {
-  bannerImages,
-  fallbackCategories,
-  fallbackProducts,
-  imageMap,
-  buildBadge,
-} from "./utils";
+import { bannerImages, imageMap, buildBadge } from "./utils";
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
+const mapProduct = (item) => ({
+  id: item._id,
+  name: item.name,
+  price: item.discountPrice || item.price || 0,
+  originalPrice: item.price || 0,
+  discountPrice: item.discountPrice || null,
+  sold: `Đã bán ${
+    item.soldCount >= 1000
+      ? (item.soldCount / 1000).toFixed(1) + "k"
+      : item.soldCount || 0
+  }`,
+  badge: buildBadge(item.price, item.discountPrice),
+  image: imageMap[item.images?.[0]] || item.images?.[0] || null,
+});
+
 function HomePage({ onOpenLogin, onOpenCart, user, onLogout }) {
   const navigate = useNavigate();
-  const [categories, setCategories] = useState(fallbackCategories);
-  const [products, setProducts] = useState(fallbackProducts);
+  const [categories, setCategories] = useState([]);
+  const [flashSaleProducts, setFlashSaleProducts] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
@@ -29,56 +40,58 @@ function HomePage({ onOpenLogin, onOpenCart, user, onLogout }) {
     return () => clearInterval(timer);
   }, []);
 
-  const handleSearch = (keyword) => {
-    fetchProducts(keyword);
-  };
-
-  const fetchProducts = async (keyword = "") => {
+  const handleSearch = async (keyword) => {
+    if (!keyword.trim()) return;
     try {
-      let url = `${apiUrl}/products?limit=6`;
-      if (keyword) {
-        url += `&keyword=${encodeURIComponent(keyword)}`;
-      }
-      const response = await fetch(url);
-      const data = await response.json();
-
-      if (!response.ok || !Array.isArray(data.items) || data.items.length === 0) {
-        return;
-      }
-
-      setProducts(
-        data.items.map((item) => ({
-          id: item._id,
-          name: item.name,
-          price: item.discountPrice || item.price || 0,
-          sold: `Đã bán ${item.soldCount >= 1000 ? (item.soldCount / 1000).toFixed(1) + 'k' : item.soldCount}`,
-          badge: buildBadge(item.price, item.discountPrice),
-          image: imageMap[item.images?.[0]] || iphone15Pro,
-        }))
+      const res = await fetch(
+        `${apiUrl}/products?keyword=${encodeURIComponent(keyword)}&limit=12`
       );
-    } catch (error) {
-      // Keep fallback products when backend is unavailable.
+      const data = await res.json();
+      if (res.ok && Array.isArray(data.items)) {
+        setProducts(data.items.map(mapProduct));
+      } else {
+        setProducts([]);
+      }
+    } catch {
+      setProducts([]);
     }
   };
 
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchAll = async () => {
+      setLoading(true);
       try {
-        const response = await fetch(`${apiUrl}/categories?limit=8`);
-        const data = await response.json();
+      const [catRes, allProductRes] = await Promise.all([
+          fetch(`${apiUrl}/categories?limit=8`),
+          fetch(`${apiUrl}/products?limit=12&sortBy=-soldCount`),
+        ]);
 
-        if (!response.ok || !Array.isArray(data.items) || data.items.length === 0) {
-          return;
+        const catData = await catRes.json();
+        const productData = await allProductRes.json();
+
+        // Categories
+        if (catRes.ok && Array.isArray(catData.items)) {
+          setCategories(catData.items.map((item) => item.name));
         }
 
-        setCategories(data.items.map((item) => item.name));
-      } catch (error) {
-        // Keep fallback categories when backend is unavailable.
+        // All products from DB
+        if (allProductRes.ok && Array.isArray(productData.items)) {
+          const allMapped = productData.items.map(mapProduct);
+          // Flash Sale = sản phẩm có giảm giá (discountPrice < originalPrice)
+          const saleItems = allMapped.filter(
+            (item) => item.discountPrice && item.discountPrice < item.originalPrice
+          );
+          setFlashSaleProducts(saleItems);
+          setProducts(allMapped);
+        }
+      } catch (err) {
+        console.error("Lỗi tải dữ liệu:", err);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchCategories();
-    fetchProducts();
+    fetchAll();
   }, []);
 
   return (
@@ -91,16 +104,24 @@ function HomePage({ onOpenLogin, onOpenCart, user, onLogout }) {
         onSearch={handleSearch}
       />
 
-
       <HeroCarousel
         currentSlide={currentSlide}
         setCurrentSlide={setCurrentSlide}
       />
 
       <section className="content-shell">
-        <CategoryList categories={categories} />
-        <FlashSale products={products} />
-        <ProductGrid products={products} />
+        {loading ? (
+          <div className="loading-screen">
+            <div className="loader"></div>
+            <p>Đang tải dữ liệu...</p>
+          </div>
+        ) : (
+          <>
+            <CategoryList categories={categories} />
+            <FlashSale products={flashSaleProducts} />
+            <ProductGrid products={products} />
+          </>
+        )}
       </section>
     </main>
   );

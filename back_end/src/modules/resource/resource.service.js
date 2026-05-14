@@ -43,7 +43,21 @@ const getResourceById = async (Model, id) => {
   return item;
 };
 
+const createResource = async (Model, data) => {
+  if (Model.modelName === "Category" && data.name) {
+    const slugify = require("../../utils/slugify");
+    data.slug = slugify(data.name);
+  }
+
+  const resource = await Model.create({
+    _id: new mongoose.Types.ObjectId(),
+    ...data,
+  });
+  return resource;
+};
+
 module.exports = {
   listResources,
   getResourceById,
+  createResource,
 };

@@ -8,10 +8,10 @@ import HomePage from "./features/home/HomePage";
 import CartPage from "./features/cart/CartPage";
 import ProductDetailPage from "./features/products/ProductDetailPage";
 import AdminPage from "./features/admin/AdminPage";
-import { useEffect } from "react";
+import StaffPage from "./features/staff/StaffPage";
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-const allowedRoles = new Set(["admin", "staff", "user", "customer"]);
+const allowedRoles = new Set(["admin", "staff", "customer"]);
 
 const initialLoginData = {
   email: "",
@@ -65,6 +65,12 @@ function App() {
     navigate("/home");
   };
 
+  const getDefaultRouteByRole = (role) => {
+    if (role === "admin") return "/admin";
+    if (role === "staff") return "/staff";
+    return "/home";
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -99,7 +105,7 @@ function App() {
     clearMessage();
 
     if (!loginData.email || !loginData.password) {
-      setMessage("Vui lòng nhập đầy đủ email và mật khẩu");
+      setMessage("Vui long nhap day du email va mat khau");
       setMessageType("error");
       return;
     }
@@ -122,13 +128,16 @@ function App() {
       const userRole = String(data?.user?.role || "").toLowerCase();
 
       if (!response.ok) {
-        setMessage(data.message || "Đăng nhập thất bại");
+        setMessage(data.message || "Dang nhap that bai");
         setMessageType("error");
         return;
       }
 
       if (!allowedRoles.has(userRole)) {
-        setMessage("Tài khoản của bạn không có quyền truy cập");
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        setUser(null);
+        setMessage("Tai khoan cua ban khong co quyen truy cap");
         setMessageType("error");
         return;
       }
@@ -140,19 +149,15 @@ function App() {
       if (data.user) {
         localStorage.setItem("user", JSON.stringify(data.user));
         setUser(data.user);
-        setMessage("Đăng nhập thành công");
+        setMessage("Dang nhap thanh cong");
         setMessageType("success");
-        
+
         setTimeout(() => {
-          if (data.user.role === "admin") {
-            navigate("/admin");
-          } else {
-            navigate("/home");
-          }
+          navigate(getDefaultRouteByRole(userRole));
         }, 1000);
       }
     } catch (error) {
-      setMessage("Không thể kết nối đến máy chủ");
+      setMessage("Khong the ket noi den may chu");
       setMessageType("error");
     } finally {
       setIsSubmitting(false);
@@ -169,13 +174,13 @@ function App() {
       !registerData.password ||
       !registerData.confirmPassword
     ) {
-      setMessage("Vui lòng điền đầy đủ các thông tin bắt buộc");
+      setMessage("Vui long dien day du cac thong tin bat buoc");
       setMessageType("error");
       return;
     }
 
     if (registerData.password !== registerData.confirmPassword) {
-      setMessage("Mật khẩu xác nhận không khớp");
+      setMessage("Mat khau xac nhan khong khop");
       setMessageType("error");
       return;
     }
@@ -199,7 +204,7 @@ function App() {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setMessage(data.message || "Đăng ký thất bại");
+        setMessage(data.message || "Dang ky that bai");
         setMessageType("error");
         return;
       }
@@ -213,10 +218,10 @@ function App() {
         setUser(data.user);
       }
 
-      setMessage("Đăng ký thành công!");
+      setMessage("Dang ky thanh cong!");
       setMessageType("success");
       setRegisterData(initialRegisterData);
-      
+
       setTimeout(() => {
         setMode("login");
         setLoginData((current) => ({
@@ -227,7 +232,7 @@ function App() {
         navigate("/home");
       }, 1500);
     } catch (error) {
-      setMessage("Không thể kết nối đến máy chủ");
+      setMessage("Khong the ket noi den may chu");
       setMessageType("error");
     } finally {
       setIsSubmitting(false);
@@ -236,11 +241,30 @@ function App() {
 
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/home" />} />
-      <Route path="/home" element={<HomePage user={user} onLogout={handleLogout} onOpenLogin={() => openAuthPage("login")} onOpenCart={openCartPage} />} />
+      <Route path="/" element={<Navigate to="/home" replace />} />
+      <Route
+        path="/home"
+        element={
+          <HomePage
+            user={user}
+            onLogout={handleLogout}
+            onOpenLogin={() => openAuthPage("login")}
+            onOpenCart={openCartPage}
+          />
+        }
+      />
       <Route path="/cart" element={<CartPage onBackHome={goHomePage} />} />
-      <Route path="/product/:id" element={<ProductDetailPage user={user} onLogout={handleLogout} onOpenLogin={() => openAuthPage("login")} onOpenCart={openCartPage} />} />
-      <Route path="/:id" element={<HomePage user={user} onLogout={handleLogout} onOpenLogin={() => openAuthPage("login")} onOpenCart={openCartPage} />} />
+      <Route
+        path="/product/:id"
+        element={
+          <ProductDetailPage
+            user={user}
+            onLogout={handleLogout}
+            onOpenLogin={() => openAuthPage("login")}
+            onOpenCart={openCartPage}
+          />
+        }
+      />
       <Route
         path="/auth"
         element={
@@ -275,12 +299,26 @@ function App() {
       <Route
         path="/admin"
         element={
-          <AdminPage
-            user={user}
-            onOpenLogin={() => openAuthPage("login")}
-            onOpenCart={openCartPage}
-            handleLogout={handleLogout}
-          />
+          user?.role === "admin" ? (
+            <AdminPage
+              user={user}
+              onOpenLogin={() => openAuthPage("login")}
+              onOpenCart={openCartPage}
+              handleLogout={handleLogout}
+            />
+          ) : (
+            <Navigate to={user ? getDefaultRouteByRole(user.role) : "/auth"} replace />
+          )
+        }
+      />
+      <Route
+        path="/staff"
+        element={
+          user?.role === "staff" ? (
+            <StaffPage user={user} handleLogout={handleLogout} />
+          ) : (
+            <Navigate to={user ? getDefaultRouteByRole(user.role) : "/auth"} replace />
+          )
         }
       />
     </Routes>

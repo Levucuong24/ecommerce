@@ -11,7 +11,13 @@ const getProductDetail = asyncHandler(async (req, res) => {
     res.json(data);
 });
 
+const createProduct = asyncHandler(async (req, res) => {
+    const data = await productService.createProduct(req.user.id, req.body);
+    res.status(201).json(data);
+});
+
 module.exports = {
   getProducts: listProducts,
   getProductById: getProductDetail,
+  createProduct,
 };

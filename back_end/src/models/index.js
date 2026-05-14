@@ -10,4 +10,5 @@ module.exports = {
   Wishlist: require("./wishlist.model"),
   Coupon: require("./coupon.model"),
   Notification: require("./notification.model"),
+  Store: require("./store.model"),
 };

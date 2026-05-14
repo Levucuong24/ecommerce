@@ -5,6 +5,21 @@ const { User } = require("../../models");
 const generateToken = require("../../utils/generateToken");
 const sendEmail = require("../../utils/sendEmail");
 
+const sanitizeUser = (user) => {
+  if (!user) return null;
+
+  return {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    phone: user.phone,
+    avatar: user.avatar,
+    isVerified: user.isVerified,
+    createdAt: user.createdAt,
+  };
+};
+
 const registerUser = async ({ name, email, password, phone }) => {
   if (!name || !email || !password) {
     const error = new Error("Tên, email và mật khẩu là bắt buộc");
@@ -33,7 +48,7 @@ const registerUser = async ({ name, email, password, phone }) => {
 
   return {
     token: generateToken(user),
-    user,
+    user: sanitizeUser(user),
   };
 };
 
@@ -52,16 +67,16 @@ const loginUser = async ({ email, password }) => {
   }
 
   const isMatched = await bcrypt.compare(password, user.password);
-  
+
   if (!isMatched) {
-    const error = new Error("Invalid credentials");
+    const error = new Error("Email hoặc mật khẩu không chính xác");
     error.statusCode = 401;
     throw error;
   }
 
   return {
     token: generateToken(user),
-    user,
+    user: sanitizeUser(user),
   };
 };
 
@@ -79,7 +94,7 @@ const getCurrentUser = async (userId) => {
 
 const forgotPassword = async (email) => {
   if (!email) {
-    const error = new Error("email is required");
+    const error = new Error("Email là bắt buộc");
     error.statusCode = 400;
     throw error;
   }
@@ -91,15 +106,12 @@ const forgotPassword = async (email) => {
     throw error;
   }
 
-  // Generate 6-digit OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-  // Set expiration to 15 minutes
   user.resetPasswordToken = otp;
   user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
   await user.save();
 
-  // Send the OTP via email
   const messageHtml = `
     <h2>Khôi phục mật khẩu</h2>
     <p>Xin chào ${user.name},</p>
@@ -119,7 +131,7 @@ const forgotPassword = async (email) => {
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();
-    
+
     console.error("Email could not be sent:", error);
     const err = new Error("Không thể gửi email. Vui lòng thử lại sau.");
     err.statusCode = 500;

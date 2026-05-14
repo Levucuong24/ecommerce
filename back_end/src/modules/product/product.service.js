@@ -1,5 +1,7 @@
-const { Product } = require("../../models");
+const { Product, Store } = require("../../models");
 const { listResources, getResourceById } = require("../resource/resource.service");
+const slugify = require("../../utils/slugify");
+const mongoose = require("mongoose");
 
 const getProducts = async (query) => listResources(Product, query);
 
@@ -36,7 +38,40 @@ const getProductById = async (id) => {
   return productData;
 };
 
+const createProduct = async (userId, productData) => {
+  // If user is staff, auto-assign their storeId and check status
+  const store = await Store.findOne({ ownerId: userId });
+  if (store) {
+    if (store.status !== "active") {
+      const error = new Error("Cửa hàng của bạn đang chờ duyệt hoặc bị khóa. Không thể thêm sản phẩm.");
+      error.statusCode = 403;
+      throw error;
+    }
+    productData.storeId = store._id;
+  } else {
+    // If user is admin but has no store, they might need to specify storeId or it might be a general product
+    // For now, let's assume staff must have a store
+    if (!productData.storeId) {
+       const error = new Error("Sản phẩm phải thuộc về một cửa hàng.");
+       error.statusCode = 400;
+       throw error;
+    }
+  }
+
+  const slug = slugify(productData.name);
+  
+  const product = await Product.create({
+    _id: new mongoose.Types.ObjectId(),
+    ...productData,
+    slug,
+    createdBy: userId,
+  });
+
+  return product;
+};
+
 module.exports = {
   getProducts,
   getProductById,
+  createProduct,
 };

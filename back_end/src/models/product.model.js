@@ -17,6 +17,7 @@ const productSchema = new mongoose.Schema(
     soldCount: { type: Number, default: 0 },
     isPublished: { type: Boolean, default: false },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    storeId: { type: mongoose.Schema.Types.ObjectId, ref: "Store" },
   },
   { versionKey: false }
 );
