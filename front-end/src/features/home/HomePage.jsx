@@ -46,7 +46,7 @@ function HomePage({ onOpenLogin, onOpenCart, user, onLogout }) {
 
     try {
       const [catRes, allProductRes] = await Promise.all([
-        fetch(`${apiUrl}/categories?limit=8`),
+        fetch(`${apiUrl}/categories?limit=100`),
         fetch(`${apiUrl}/products?limit=12&sortBy=-soldCount`),
       ]);
 

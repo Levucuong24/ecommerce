@@ -918,7 +918,8 @@ a {
 .shop-header-main,
 .hero-banner,
 .content-shell {
-  width: min(1200px, 100%);
+  max-width: 1400px;
+  width: calc(100% - 40px);
   margin: 0 auto;
 }
 
@@ -1274,22 +1275,7 @@ a {
   font-weight: 700;
 }
 
-.category-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-}
 
-.category-chip {
-  padding: 20px;
-  border-radius: 20px;
-  text-align: center;
-  color: var(--text-main);
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  font-weight: 600;
-  transition: all 0.3s ease;
-}
 
 .flash-sale-grid,
 .product-grid {
@@ -1407,7 +1393,6 @@ a {
 
 .hero-mini-card:hover,
 .quick-entry-card:hover,
-.category-chip:hover,
 .flash-item-card:hover,
 .product-card:hover {
   transform: translateY(-6px);
@@ -1426,11 +1411,7 @@ a {
   transform: scale(1.1) rotate(-4deg);
 }
 
-.category-chip:hover {
-  border-color: #93c5fd;
-  background: linear-gradient(135deg, #dbeafe, #ffffff);
-  box-shadow: 0 16px 28px rgba(14, 88, 202, 0.12);
-}
+
 
 .flash-item-card:hover,
 .product-card:hover {
