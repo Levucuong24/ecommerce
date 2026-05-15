@@ -17,14 +17,15 @@ const getReviews = async (query) => {
 const getReviewById = async (id) => getResourceById(Review, id);
 
 const createReview = async (userId, data) => {
-  const { productId, rating, comment } = data;
+  const { productId, rating, comment, images } = data;
 
   const review = await Review.create({
     _id: new mongoose.Types.ObjectId(),
     userId,
     productId,
-    rating,
+    rating: Number(rating),
     comment,
+    images: images || [],
     createdAt: new Date(),
   });
 

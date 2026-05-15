@@ -14,6 +14,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
   const [reviews, setReviews] = useState([]);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: "" });
+  const [reviewImages, setReviewImages] = useState([]);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [reviewMessage, setReviewMessage] = useState("");
   const [isFollowingStore, setIsFollowingStore] = useState(false);
@@ -66,21 +67,23 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
     setIsSubmittingReview(true);
     setReviewMessage("");
     try {
+      const formData = new FormData();
+      formData.append("productId", id);
+      formData.append("rating", reviewForm.rating);
+      formData.append("comment", reviewForm.comment);
+      reviewImages.forEach((img) => formData.append("images", img));
+
       const response = await fetch(`${apiUrl}/reviews`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${getAuthToken()}`,
         },
-        body: JSON.stringify({
-          productId: id,
-          rating: reviewForm.rating,
-          comment: reviewForm.comment,
-        }),
+        body: formData,
       });
 
       if (response.ok) {
         setReviewForm({ rating: 5, comment: "" });
+        setReviewImages([]);
         setReviewMessage("Đánh giá thành công!");
         fetchReviews();
         // Also refresh product to update rating count/average
@@ -497,6 +500,35 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
                     required
                   ></textarea>
                 </div>
+                <div style={{ marginBottom: "15px" }}>
+                  <label style={{ display: "block", marginBottom: "5px", fontWeight: "500", fontSize: "0.9rem", color: "var(--text-secondary)" }}>Đính kèm hình ảnh (Tối đa 5 ảnh)</label>
+                  <input 
+                    type="file" 
+                    multiple 
+                    accept="image/*" 
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files);
+                      if (files.length > 5) {
+                        alert("Bạn chỉ được tải lên tối đa 5 ảnh.");
+                        return;
+                      }
+                      setReviewImages(files);
+                    }} 
+                    style={{ marginBottom: "10px" }}
+                  />
+                  {reviewImages.length > 0 && (
+                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "10px" }}>
+                      {reviewImages.map((file, idx) => (
+                        <img 
+                          key={idx} 
+                          src={URL.createObjectURL(file)} 
+                          alt="preview" 
+                          style={{ width: "80px", height: "80px", objectFit: "cover", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-color)" }} 
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <button type="submit" disabled={isSubmittingReview} className="primary-btn">
                   {isSubmittingReview ? "Đang gửi..." : "Gửi Đánh Giá"}
                 </button>
@@ -536,6 +568,22 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
                     {renderStars(review.rating)}
                   </div>
                   <p style={{ margin: 0, color: "var(--text-primary)", lineHeight: "1.5" }}>{review.comment}</p>
+                  {review.images && review.images.length > 0 && (
+                    <div style={{ display: "flex", gap: "10px", marginTop: "12px", flexWrap: "wrap" }}>
+                      {review.images.map((img, idx) => {
+                        const imgUrl = img.startsWith('http') ? img : `${apiUrl.replace('/api', '')}${img}`;
+                        return (
+                          <img 
+                            key={idx} 
+                            src={imgUrl} 
+                            alt="Review" 
+                            style={{ width: "100px", height: "100px", objectFit: "cover", borderRadius: "var(--radius-sm)", border: "1px solid rgba(0,0,0,0.05)", cursor: "pointer" }} 
+                            onClick={() => window.open(imgUrl, '_blank')}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               ))
             )}

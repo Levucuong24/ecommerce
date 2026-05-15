@@ -1,6 +1,6 @@
-function Logo({ className = "", showText = true }) {
+function Logo({ className = "", showText = true, onClick }) {
   return (
-    <div className={["site-logo", className].filter(Boolean).join(" ")}>
+    <div className={["site-logo", className].filter(Boolean).join(" ")} onClick={onClick} style={onClick ? { cursor: 'pointer' } : {}}>
       <div className="logo-container">
         <img
           src="/images/logoapp.png"

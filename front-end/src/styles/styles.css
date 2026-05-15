@@ -893,7 +893,7 @@ a {
 .home-page {
   min-height: 100vh;
   background-color: var(--bg-main);
-  padding-top: calc(var(--header-h) + 280px);
+  padding-top: 0;
 }
 
 
@@ -1071,7 +1071,7 @@ a {
 }
 
 .hero-banner {
-  margin-top: calc(var(--header-h) + 120px);
+  margin-top: 154px; /* Precisely clears the header (~148px) with a tiny 6px gap */
 }
 
 .hero-carousel {
@@ -1239,7 +1239,7 @@ a {
 }
 
 .content-shell {
-  padding: calc(var(--header-h) + 108px) 0 100px;
+  padding: 20px 0 100px;
 }
 
 
@@ -1943,7 +1943,7 @@ a {
   .home-page {
     background:
       linear-gradient(180deg, #0c5adb 0, #0f75ff 180px, #f4f8ff 180px, #f4f8ff 100%);
-    padding-top: calc(var(--header-h) + 190px);
+    padding-top: 0;
   }
 
   .shop-header {
@@ -2319,7 +2319,7 @@ a {
 .hero-carousel {
   position: relative;
   width: 100%;
-  height: 400px;
+  height: 620px;
   overflow: hidden;
   border-radius: 12px;
   margin-bottom: 24px;
@@ -2342,9 +2342,10 @@ a {
 }
 
 .hero-carousel-slide img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  width: 95%;
+  height: 95%;
+  object-fit: contain;
+  border-radius: 20px;
   display: block;
 }
 

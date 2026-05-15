@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Logo from "../../../components/Logo";
 import { getAuthToken } from "../../../utils/authStorage";
 import { DATA_EVENTS, subscribeDataChanged } from "../../../utils/realtimeEvents";
@@ -6,6 +7,7 @@ import { DATA_EVENTS, subscribeDataChanged } from "../../../utils/realtimeEvents
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -200,7 +202,7 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
       </div>
 
       <div className="shop-header-main">
-        <Logo className="shop-brand" />
+        <Logo className="shop-brand" onClick={() => navigate('/home')} />
 
         <div className="shop-search-area">
           <div className="shop-search-box">

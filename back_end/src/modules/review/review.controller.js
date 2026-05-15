@@ -12,7 +12,8 @@ const getReviewById = asyncHandler(async (req, res) => {
 });
 
 const createReview = asyncHandler(async (req, res) => {
-  const data = await reviewService.createReview(req.user.id, req.body);
+  const images = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
+  const data = await reviewService.createReview(req.user.id, { ...req.body, images });
   res.status(201).json(data);
 });
 
