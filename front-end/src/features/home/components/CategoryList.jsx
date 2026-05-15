@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { useNavigate } from "react-router-dom";
 
 const categoryIcons = {
   "Thời Trang Nam": "👕",
@@ -40,6 +41,12 @@ const getCategoryIcon = (name) => {
 
 function CategoryList({ categories }) {
   const scrollRef = useRef(null);
+  const navigate = useNavigate();
+
+  const handleCategoryClick = (category) => {
+    const targetUrl = `/${category.slug}-${category._id}`;
+    navigate(targetUrl);
+  };
 
   const scroll = (direction) => {
     if (scrollRef.current) {
@@ -81,11 +88,16 @@ function CategoryList({ categories }) {
         
         <div className="category-grid" ref={scrollRef}>
           {categories.map((category) => (
-            <div key={category} className="category-chip">
+            <div 
+              key={category._id} 
+              className="category-chip"
+              onClick={() => handleCategoryClick(category)}
+              style={{ cursor: 'pointer' }}
+            >
               <div className="category-icon-placeholder">
-                {getCategoryIcon(category)}
+                {getCategoryIcon(category.name)}
               </div>
-              <span className="category-name">{category}</span>
+              <span className="category-name">{category.name}</span>
             </div>
           ))}
         </div>

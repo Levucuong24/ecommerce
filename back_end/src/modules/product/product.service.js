@@ -47,6 +47,8 @@ const getProductById = async (id) => {
         totalProducts,
         totalRatings: stats[0]?.totalRatings || 0,
         avgRating: stats[0]?.avgRating || 0,
+        isOnline: store.isOnline || false,
+        lastActive: store.lastActive || store.createdAt,
         responseTime: "trong vài giờ",
         responseRate: "99%",
       };

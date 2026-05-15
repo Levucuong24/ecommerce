@@ -53,6 +53,12 @@ const getFollowingStores = asyncHandler(async (req, res) => {
   res.json(stores);
 });
 
+const updateOnlineStatus = asyncHandler(async (req, res) => {
+  const { isOnline } = req.body;
+  const store = await storeService.updateStoreOnlineStatus(req.user.id, isOnline);
+  res.json(store);
+});
+
 module.exports = {
   createStore,
   getMyStore,
@@ -64,4 +70,5 @@ module.exports = {
   updateStoreStatus,
   toggleFollowStore,
   getFollowingStores,
+  updateOnlineStatus,
 };

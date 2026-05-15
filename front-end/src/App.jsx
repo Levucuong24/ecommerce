@@ -5,13 +5,15 @@ import LoginForm from "./features/auth/login/LoginForm";
 import ForgotPasswordForm from "./features/auth/login/ForgotPasswordForm";
 import RegisterForm from "./features/auth/register/RegisterForm";
 import HomePage from "./features/home/HomePage";
+import CategoryPage from "./features/home/CategoryPage";
 import CartPage from "./features/cart/CartPage";
 import ProductDetailPage from "./features/products/ProductDetailPage";
 import ShopPage from "./features/shop/ShopPage";
 import FollowingShopsPage from "./features/shop/FollowingShopsPage";
 import AdminPage from "./features/admin/AdminPage";
 import StaffPage from "./features/staff/StaffPage";
-import { clearAuthSession, getAuthUser, saveAuthSession } from "./utils/authStorage";
+import { clearAuthSession, getAuthUser, saveAuthSession, getAuthToken } from "./utils/authStorage";
+import { DATA_EVENTS, emitDataChanged } from "./utils/realtimeEvents";
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const allowedRoles = new Set(["admin", "staff", "customer"]);
@@ -67,7 +69,29 @@ function App() {
     return "/home";
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // If the user is staff, set their store to offline before logging out
+    if (user?.role === "staff") {
+      try {
+        const token = getAuthToken();
+        // Use keepalive: true to ensure the request completes even if the page navigates
+        fetch(`${apiUrl}/stores/online-status`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ isOnline: false }),
+          keepalive: true,
+        });
+        
+        // Emit event so other tabs update immediately
+        emitDataChanged(DATA_EVENTS.STORES, { isOnline: false });
+      } catch (err) {
+        console.error("Error setting store offline during logout:", err);
+      }
+    }
+
     clearAuthSession();
     setUser(null);
     navigate("/home");
@@ -327,6 +351,17 @@ function App() {
           ) : (
             <Navigate to={user ? getDefaultRouteByRole(user.role) : "/auth"} replace />
           )
+        }
+      />
+      <Route
+        path="/:categorySlug"
+        element={
+          <CategoryPage
+            user={user}
+            onLogout={handleLogout}
+            onOpenLogin={() => openAuthPage("login")}
+            onOpenCart={openCartPage}
+          />
         }
       />
     </Routes>

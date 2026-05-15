@@ -54,7 +54,7 @@ function HomePage({ onOpenLogin, onOpenCart, user, onLogout }) {
       const productData = await allProductRes.json();
 
       if (catRes.ok && Array.isArray(catData.items)) {
-        setCategories(catData.items.map((item) => item.name));
+        setCategories(catData.items);
       }
 
       if (allProductRes.ok && Array.isArray(productData.items)) {

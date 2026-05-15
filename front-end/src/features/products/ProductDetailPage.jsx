@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import Header from "../home/components/Header";
 import { getAuthToken } from "../../utils/authStorage";
 import { imageMap, formatPrice } from "../home/utils";
+import { DATA_EVENTS, subscribeDataChanged } from "../../utils/realtimeEvents";
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -35,7 +36,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const response = await fetch(`${apiUrl}/products/${id}`);
+        const response = await fetch(`${apiUrl}/products/${id}?t=${Date.now()}`);
         const data = await response.json();
 
         if (!response.ok) {
@@ -56,6 +57,21 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
     };
 
     fetchProduct();
+
+    // Polling for real-time status updates (like shop online status)
+    const interval = setInterval(fetchProduct, 10000);
+
+    // Immediate update when receiving an event from another tab
+    const unsubscribe = subscribeDataChanged((event) => {
+      if (event?.type === DATA_EVENTS.STORES) {
+        fetchProduct();
+      }
+    });
+
+    return () => {
+      clearInterval(interval);
+      unsubscribe();
+    };
   }, [id]);
 
   const handleReviewSubmit = async (e) => {
@@ -210,29 +226,6 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
       />
 
       <section className="content-shell product-detail-container">
-        <div 
-          className="back-to-home" 
-          onClick={() => navigate("/home")}
-          style={{ 
-            display: "inline-flex", 
-            alignItems: "center", 
-            gap: "5px", 
-            color: "var(--text-secondary)", 
-            cursor: "pointer", 
-            marginBottom: "15px",
-            fontSize: "14px",
-            fontWeight: "500",
-            transition: "color 0.2s"
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.color = "var(--primary)"}
-          onMouseLeave={(e) => e.currentTarget.style.color = "var(--text-secondary)"}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12"></line>
-            <polyline points="12 19 5 12 12 5"></polyline>
-          </svg>
-          Quay lại Trang Chủ
-        </div>
 
         <div className="product-detail-card">
           <div className="product-detail-visuals">
@@ -388,7 +381,25 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
               </div>
               <div className="shop-info-main">
                 <div className="shop-name">{product.shop.name}</div>
-                <div className="shop-online-status">Online 22 phút trước</div>
+                <div className="shop-online-status">
+                  <span className={`status-dot ${product.shop.isOnline ? 'online' : 'offline'}`}></span>
+                  {product.shop.isOnline ? (
+                    "Online"
+                  ) : (
+                    `Online ${(() => {
+                      const lastActive = product.shop.lastActive || product.shop.createdAt;
+                      if (!lastActive) return "vừa mới";
+                      const lastActiveDate = new Date(lastActive);
+                      if (isNaN(lastActiveDate.getTime())) return "vừa mới";
+                      
+                      const diff = Math.floor((new Date() - lastActiveDate) / 60000);
+                      if (diff < 1) return "vừa mới";
+                      if (diff < 60) return `${diff} phút trước`;
+                      if (diff < 1440) return `${Math.floor(diff / 60)} giờ trước`;
+                      return `${Math.floor(diff / 1440)} ngày trước`;
+                    })()}`
+                  )}
+                </div>
                 <div className="shop-actions">
                   <button 
                     className="shop-view-btn" 

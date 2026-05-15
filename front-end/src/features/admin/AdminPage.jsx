@@ -317,7 +317,7 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
                           <tr key={s._id}>
                             <td>
                               <div className="user-info">
-                                <div className="user-avatar-mini">
+                                <div className="admin-shop-logo">
                                   {s.logo ? <img src={s.logo} alt={s.name} /> : <span>{s.name?.[0]}</span>}
                                 </div>
                                 <div>

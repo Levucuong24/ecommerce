@@ -126,6 +126,16 @@ const getFollowingStores = async (userId) => {
     .sort({ createdAt: -1 });
 };
 
+const updateStoreOnlineStatus = async (userId, isOnline) => {
+  const store = await Store.findOne({ ownerId: userId });
+  if (store) {
+    store.isOnline = isOnline;
+    store.lastActive = new Date();
+    await store.save();
+  }
+  return store;
+};
+
 module.exports = {
   createStore,
   getMyStore,
@@ -137,4 +147,5 @@ module.exports = {
   approveStore,
   toggleFollowStore,
   getFollowingStores,
+  updateStoreOnlineStatus,
 };

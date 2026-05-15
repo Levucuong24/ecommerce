@@ -12,6 +12,8 @@ const storeSchema = new mongoose.Schema(
     status: { type: String, enum: ["pending", "active", "inactive"], default: "pending" },
     followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     followerCount: { type: Number, default: 0 },
+    isOnline: { type: Boolean, default: false },
+    lastActive: { type: Date, default: Date.now },
     createdAt: { type: Date, default: Date.now },
   },
   { versionKey: false }

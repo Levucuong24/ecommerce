@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { formatPrice } from "../utils";
+import "./ProductCard.css";
 
 function ProductGrid({ products }) {
   const navigate = useNavigate();

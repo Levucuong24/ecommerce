@@ -4,7 +4,7 @@ import { getMyStore } from "./services/storeApi";
 import StoreSetup from "./components/StoreSetup";
 import StoreDashboard from "./components/StoreDashboard";
 import { getAuthToken } from "../../utils/authStorage";
-import { DATA_EVENTS, subscribeDataChanged } from "../../utils/realtimeEvents";
+import { DATA_EVENTS, emitDataChanged, subscribeDataChanged } from "../../utils/realtimeEvents";
 
 function StaffPage({ user, handleLogout }) {
   const [store, setStore] = useState(null);
@@ -41,6 +41,38 @@ function StaffPage({ user, handleLogout }) {
       }
     });
   }, [user, fetchStore]);
+
+  useEffect(() => {
+    if (user?.role === "staff") {
+      const updateStatus = async (isOnline) => {
+        try {
+          const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+          await fetch(`${apiUrl}/stores/online-status`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${getAuthToken()}`,
+            },
+            body: JSON.stringify({ isOnline }),
+            keepalive: true,
+          });
+          
+          // Phát sự kiện để các tab khác (ví dụ: trang sản phẩm) biết Shop đã online
+          emitDataChanged(DATA_EVENTS.STORES, { isOnline });
+        } catch (err) {
+          console.error("Error updating online status:", err);
+        }
+      };
+
+      updateStatus(true);
+      
+      // Update status to offline when leaving the page
+      return () => {
+        updateStatus(false);
+      };
+    }
+    return undefined;
+  }, [user]);
 
   if (!user) {
     return (

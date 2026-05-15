@@ -1,4 +1,5 @@
 import { bannerImages, quickLinks } from "../utils";
+import "./HeroCarousel.css";
 
 function HeroCarousel({ currentSlide, setCurrentSlide }) {
   return (
