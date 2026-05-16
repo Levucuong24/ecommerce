@@ -18,6 +18,8 @@ const productSchema = new mongoose.Schema(
     isPublished: { type: Boolean, default: false },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     storeId: { type: mongoose.Schema.Types.ObjectId, ref: "Store" },
+    likes: { type: [mongoose.Schema.Types.ObjectId], ref: "User", default: [] },
+    likeCount: { type: Number, default: 0 },
   },
   { versionKey: false }
 );

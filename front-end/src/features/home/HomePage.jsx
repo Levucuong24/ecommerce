@@ -11,22 +11,6 @@ import { DATA_EVENTS, subscribeDataChanged } from "../../utils/realtimeEvents";
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-const mapProduct = (item) => ({
-  id: item._id,
-  name: item.name,
-  price: item.discountPrice || item.price || 0,
-  originalPrice: item.price || 0,
-  discountPrice: item.discountPrice || null,
-  sold: `Da ban ${
-    item.soldCount >= 1000
-      ? (item.soldCount / 1000).toFixed(1) + "k"
-      : item.soldCount || 0
-  }`,
-  badge: buildBadge(item.price, item.discountPrice),
-  image: imageMap[item.images?.[0]] || item.images?.[0] || null,
-  categoryName: item.categoryId?.name || "Khác",
-});
-
 function HomePage({ onOpenLogin, onOpenCart, user, onLogout }) {
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
@@ -34,13 +18,6 @@ function HomePage({ onOpenLogin, onOpenCart, user, onLogout }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % bannerImages.length);
-    }, 10000);
-    return () => clearInterval(timer);
-  }, []);
 
   const fetchAll = useCallback(async ({ showLoading = true } = {}) => {
     if (showLoading) setLoading(true);
@@ -71,7 +48,49 @@ function HomePage({ onOpenLogin, onOpenCart, user, onLogout }) {
     } finally {
       if (showLoading) setLoading(false);
     }
-  }, []);
+  }, [user]); // Re-map when user changes
+
+  const handleLike = async (productId) => {
+    if (!user) {
+      onOpenLogin();
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiUrl}/products/${productId}/like`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+      });
+      if (response.ok) {
+        fetchAll({ showLoading: false });
+      }
+    } catch (error) {
+      console.error("Lỗi khi yêu thích sản phẩm:", error);
+    }
+  };
+
+  const mapProduct = useCallback((item) => {
+    const userId = user?.id || user?._id;
+    return {
+      id: item._id,
+      name: item.name,
+      price: item.discountPrice || item.price || 0,
+      originalPrice: item.price || 0,
+      discountPrice: item.discountPrice || null,
+      sold: `Đã bán ${
+        item.soldCount >= 1000
+          ? (item.soldCount / 1000).toFixed(1) + "k"
+          : item.soldCount || 0
+      }`,
+      badge: buildBadge(item.price, item.discountPrice),
+      image: imageMap[item.images?.[0]] || item.images?.[0] || null,
+      categoryName: item.categoryId?.name || "Khác",
+      isLiked: item.likes?.includes(userId),
+      onLike: handleLike,
+    };
+  }, [user, handleLike]);
 
   const handleSearch = async (keyword) => {
     if (!keyword.trim()) return;

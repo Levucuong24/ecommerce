@@ -11,21 +11,31 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
   const [query, setQuery] = useState("");
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [likedCount, setLikedCount] = useState(0);
+  const [cartCount, setCartCount] = useState(0);
+  const [cart, setCart] = useState(null);
 
   useEffect(() => {
     if (user) {
       fetchNotifications();
+      fetchLikedCount();
+      fetchCartCount();
       
-      // Lắng nghe sự kiện dữ liệu thay đổi để cập nhật thông báo ngay lập tức
+      // Lắng nghe sự kiện dữ liệu thay đổi để cập nhật thông báo, yêu thích và giỏ hàng
       const unsubscribe = subscribeDataChanged((event) => {
         if (event.type === DATA_EVENTS.PRODUCTS) {
-          // Khi có sản phẩm mới được đăng, tải lại thông báo
           fetchNotifications();
+          fetchLikedCount();
+          fetchCartCount();
         }
       });
 
-      // Thiết lập polling mỗi 10 giây để cập nhật thông báo từ server
-      const interval = setInterval(fetchNotifications, 10000);
+      // Thiết lập polling mỗi 10 giây
+      const interval = setInterval(() => {
+        fetchNotifications();
+        fetchLikedCount();
+        fetchCartCount();
+      }, 10000);
       return () => {
         unsubscribe();
         clearInterval(interval);
@@ -47,6 +57,40 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
       }
     } catch (error) {
       console.error("Lỗi khi tải thông báo:", error);
+    }
+  };
+
+  const fetchLikedCount = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/products/liked`, {
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setLikedCount(data.total || 0);
+      }
+    } catch (error) {
+      console.error("Lỗi khi tải số lượng yêu thích:", error);
+    }
+  };
+
+  const fetchCartCount = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/cart`, {
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setCart(data);
+        const totalItems = data.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0;
+        setCartCount(totalItems);
+      }
+    } catch (error) {
+      console.error("Lỗi khi tải số lượng giỏ hàng:", error);
     }
   };
 
@@ -180,6 +224,9 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
                 Hi, {user.name}
               </span>
               <div className="user-dropdown-popup">
+                <button type="button" onClick={() => window.location.href = "/liked-products"} className="admin-dash-btn">
+                  Sản phẩm yêu thích {likedCount > 0 && <span style={{ color: "var(--primary)", fontWeight: "bold" }}>({likedCount})</span>}
+                </button>
                 <button type="button" onClick={() => window.location.href = "/following-shops"} className="admin-dash-btn">
                   Shop đang theo dõi
                 </button>
@@ -234,12 +281,36 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
               <circle cx="20" cy="21" r="1"></circle>
               <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
             </svg>
+            {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
           </button>
           <div className="cart-popup">
-            <div className="empty-cart-message">
-              <img src="/images/logochuacosanpham.png" alt="Chua co san pham" className="empty-cart-img" />
-              <p>Chua co san pham</p>
-            </div>
+            {user && cart && cart.items?.length > 0 ? (
+              <div className="cart-popup-content">
+                <div className="cart-popup-title">Sản Phẩm Mới Thêm</div>
+                <div className="cart-popup-list">
+                  {cart.items.slice(0, 5).map((item) => (
+                    <div key={item.productId?._id} className="cart-popup-item">
+                      <img src={item.productId?.images?.[0] || "/images/cart.png"} alt={item.productId?.name} />
+                      <div className="cart-popup-item-info">
+                        <div className="name">{item.productId?.name}</div>
+                        <div className="price-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div className="price" style={{ color: "var(--primary)", fontWeight: "500" }}>
+                            {new Intl.NumberFormat("vi-VN").format(item.productId?.discountPrice || item.productId?.price || 0)}đ
+                          </div>
+                          <div className="quantity" style={{ color: "#888", fontSize: "12px" }}>x{item.quantity}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {cart.items.length > 5 && <div className="cart-popup-more">Và {cart.items.length - 5} sản phẩm khác</div>}
+              </div>
+            ) : (
+              <div className="empty-cart-message">
+                <img src="/images/logochuacosanpham.png" alt="Chua co san pham" className="empty-cart-img" />
+                <p>Chua co san pham</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

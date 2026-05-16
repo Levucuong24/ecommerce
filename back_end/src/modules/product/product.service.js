@@ -100,8 +100,43 @@ const createProduct = async (userId, productData) => {
   return product;
 };
 
+const toggleLikeProduct = async (productId, userId) => {
+  const product = await Product.findById(productId);
+  if (!product) {
+    const error = new Error("Sản phẩm không tồn tại");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const userIndex = product.likes.indexOf(userId);
+  let isLiked = false;
+
+  if (userIndex === -1) {
+    product.likes.push(userId);
+    isLiked = true;
+  } else {
+    product.likes.splice(userIndex, 1);
+    isLiked = false;
+  }
+
+  product.likeCount = product.likes.length;
+  await product.save();
+
+  return { isLiked, likeCount: product.likeCount };
+};
+
+const getLikedProducts = async (userId) => {
+  const products = await Product.find({ likes: userId }).populate("categoryId");
+  return {
+    items: products,
+    total: products.length,
+  };
+};
+
 module.exports = {
   getProducts,
   getProductById,
   createProduct,
+  toggleLikeProduct,
+  getLikedProducts,
 };

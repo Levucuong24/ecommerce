@@ -39,10 +39,18 @@ function ProductGrid({ products }) {
                 <div className="product-image-placeholder" />
               )}
               <span className="product-badge">{product.badge}</span>
+              <button 
+                className={`like-btn ${product.isLiked ? 'active' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  product.onLike?.(product.id);
+                }}
+              >
+                {product.isLiked ? "❤️" : "🤍"}
+              </button>
             </div>
             <div className="product-body">
               <h3>{product.name}</h3>
-              <div className="product-category-tag">{product.categoryName}</div>
               <strong>{formatPrice(product.price)}đ</strong>
               <div className="product-meta">
                 <span>{product.sold}</span>

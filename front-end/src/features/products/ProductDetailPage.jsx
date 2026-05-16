@@ -13,6 +13,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
+  const [quantity, setQuantity] = useState(1);
   const [reviews, setReviews] = useState([]);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: "" });
   const [reviewImages, setReviewImages] = useState([]);
@@ -153,6 +154,68 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
     }
   };
 
+  const handleLike = async () => {
+    if (!user) {
+      onOpenLogin();
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiUrl}/products/${id}/like`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const userId = user.id || user._id;
+        setProduct((prev) => ({
+          ...prev,
+          likes: data.isLiked 
+            ? [...(prev.likes || []), userId] 
+            : (prev.likes || []).filter(uid => uid !== userId),
+          likeCount: data.likeCount
+        }));
+      }
+    } catch (error) {
+      console.error("Lỗi khi yêu thích sản phẩm:", error);
+    }
+  };
+
+  const handleAddToCart = async (isBuyNow = false) => {
+    if (!user) {
+      onOpenLogin();
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiUrl}/cart`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+        body: JSON.stringify({
+          productId: id,
+          quantity: quantity
+        }),
+      });
+      if (response.ok) {
+        if (isBuyNow) {
+          onOpenCart();
+        } else {
+          // Success notification
+          alert("Sản phẩm đã được thêm vào giỏ hàng!");
+          // Trigger header update
+          emitDataChanged({ type: DATA_EVENTS.PRODUCTS }); // Reuse product event or create new CART event
+        }
+      }
+    } catch (error) {
+      console.error("Lỗi khi thêm vào giỏ hàng:", error);
+    }
+  };
+
   const handleSearch = (keyword) => {
     navigate(`/home`);
   };
@@ -256,9 +319,13 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
                 <span className="share-icon pinterest"></span>
                 <span className="share-icon twitter"></span>
               </div>
-              <div className="like-count">
-                <span className="heart-icon">❤️</span>
-                <span>Đã thích ({formatCount(product.likes || 0)})</span>
+              <div 
+                className={`like-count ${product.likes?.includes(user?.id || user?._id) ? 'active' : ''}`}
+                onClick={handleLike}
+                style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "5px" }}
+              >
+                <span className="heart-icon">{product.likes?.includes(user?.id || user?._id) ? '❤️' : '🤍'}</span>
+                <span>Đã thích ({formatCount(product.likes?.length || product.likeCount || 0)})</span>
               </div>
             </div>
           </div>
@@ -268,7 +335,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
               <span className="favorite-badge">Yêu thích</span>
               {product.name}
             </h1>
-            <div className="product-category-tag" style={{ marginBottom: '15px' }}>{product.categoryId?.name}</div>
+
             
             <div className="product-rating-row">
               <div className="rating-block">
@@ -325,7 +392,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
               </div>
 
               <div className="promo-row">
-                <span className="promo-label">An Tâm Mua Sắm Cùng Shopee</span>
+                <span className="promo-label">An Tâm Mua Sắm Cùng Ecommerce</span>
                 <div className="guarantee-info">
                   <span className="checkmark-icon">🛡️</span>
                   <span>Trả hàng miễn phí 15 ngày • Bảo hiểm bảo vệ người tiêu dùng</span>
@@ -348,9 +415,9 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
                 <span className="promo-label">Số Lượng</span>
                 <div className="quantity-control-wrapper">
                   <div className="quantity-selector">
-                    <button className="qty-btn">-</button>
-                    <input type="text" value="1" readOnly className="qty-input" />
-                    <button className="qty-btn">+</button>
+                    <button className="qty-btn" onClick={() => setQuantity(prev => Math.max(1, prev - 1))}>-</button>
+                    <input type="text" value={quantity} readOnly className="qty-input" />
+                    <button className="qty-btn" onClick={() => setQuantity(prev => Math.min(product.stock || 99, prev + 1))}>+</button>
                   </div>
                   <span className="stock-hint">{product.stock} sản phẩm có sẵn</span>
                 </div>
@@ -358,7 +425,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
             </div>
 
             <div className="product-actions">
-              <button className="add-to-cart-btn">
+              <button className="add-to-cart-btn" onClick={() => handleAddToCart(false)}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="9" cy="21" r="1"></circle>
                   <circle cx="20" cy="21" r="1"></circle>
@@ -366,7 +433,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
                 </svg>
                 Thêm Vào Giỏ Hàng
               </button>
-              <button className="buy-now-btn">Mua Ngay</button>
+              <button className="buy-now-btn" onClick={() => handleAddToCart(true)}>Mua Ngay</button>
             </div>
           </div>
         </div>
@@ -468,7 +535,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
           <div className="spec-table">
             <div className="spec-table-row">
               <span className="spec-table-label">Danh Mục</span>
-              <span className="spec-table-value">Shopee {">"} {product.categoryId?.name || "Khác"}</span>
+              <span className="spec-table-value">Ecommerce {">"} {product.categoryId?.name || "Khác"}</span>
             </div>
             <div className="spec-table-row">
               <span className="spec-table-label">Thương hiệu</span>

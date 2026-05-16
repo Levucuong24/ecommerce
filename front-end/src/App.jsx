@@ -12,6 +12,7 @@ import ShopPage from "./features/shop/ShopPage";
 import FollowingShopsPage from "./features/shop/FollowingShopsPage";
 import AdminPage from "./features/admin/AdminPage";
 import StaffPage from "./features/staff/StaffPage";
+import LikedProductsPage from "./features/shop/LikedProductsPage";
 import { clearAuthSession, getAuthUser, saveAuthSession, getAuthToken } from "./utils/authStorage";
 import { DATA_EVENTS, emitDataChanged } from "./utils/realtimeEvents";
 
@@ -263,7 +264,17 @@ function App() {
           />
         }
       />
-      <Route path="/cart" element={<CartPage onBackHome={goHomePage} />} />
+      <Route 
+        path="/cart" 
+        element={
+          <CartPage 
+            user={user} 
+            onLogout={handleLogout}
+            onOpenLogin={() => openAuthPage("login")}
+            onBackHome={goHomePage} 
+          />
+        } 
+      />
       <Route
         path="/product/:id"
         element={
@@ -279,6 +290,17 @@ function App() {
         path="/shop/:id"
         element={
           <ShopPage
+            user={user}
+            onLogout={handleLogout}
+            onOpenLogin={() => openAuthPage("login")}
+            onOpenCart={openCartPage}
+          />
+        }
+      />
+      <Route
+        path="/liked-products"
+        element={
+          <LikedProductsPage
             user={user}
             onLogout={handleLogout}
             onOpenLogin={() => openAuthPage("login")}

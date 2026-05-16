@@ -16,8 +16,20 @@ const createProduct = asyncHandler(async (req, res) => {
     res.status(201).json(data);
 });
 
+const toggleLikeProduct = asyncHandler(async (req, res) => {
+    const data = await productService.toggleLikeProduct(req.params.id, req.user.id);
+    res.json(data);
+});
+
+const getLikedProducts = asyncHandler(async (req, res) => {
+    const data = await productService.getLikedProducts(req.user.id);
+    res.json(data);
+});
+
 module.exports = {
   getProducts: listProducts,
   getProductById: getProductDetail,
   createProduct,
+  toggleLikeProduct,
+  getLikedProducts,
 };

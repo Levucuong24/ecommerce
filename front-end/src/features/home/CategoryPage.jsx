@@ -3,30 +3,57 @@ import { useParams, useNavigate } from "react-router-dom";
 import Header from "./components/Header";
 import ProductGrid from "./components/ProductGrid";
 import { imageMap, buildBadge } from "./utils";
+import { getAuthToken } from "../../utils/authStorage";
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-
-const mapProduct = (item) => ({
-  id: item._id,
-  name: item.name,
-  price: item.discountPrice || item.price || 0,
-  originalPrice: item.price || 0,
-  discountPrice: item.discountPrice || null,
-  sold: `Đã bán ${
-    item.soldCount >= 1000
-      ? (item.soldCount / 1000).toFixed(1) + "k"
-      : item.soldCount || 0
-  }`,
-  badge: buildBadge(item.price, item.discountPrice),
-  image: imageMap[item.images?.[0]] || item.images?.[0] || null,
-  categoryName: item.categoryId?.name || "Khác",
-});
 
 function CategoryPage({ user, onLogout, onOpenLogin, onOpenCart }) {
   const { categorySlug } = useParams();
   const [products, setProducts] = useState([]);
   const [categoryName, setCategoryName] = useState("");
   const [loading, setLoading] = useState(true);
+
+  const handleLike = async (productId) => {
+    if (!user) {
+      onOpenLogin();
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiUrl}/products/${productId}/like`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+      });
+      if (response.ok) {
+        fetchCategoryProducts();
+      }
+    } catch (error) {
+      console.error("Lỗi khi yêu thích sản phẩm:", error);
+    }
+  };
+
+  const mapProduct = useCallback((item) => {
+    const userId = user?.id || user?._id;
+    return {
+      id: item._id,
+      name: item.name,
+      price: item.discountPrice || item.price || 0,
+      originalPrice: item.price || 0,
+      discountPrice: item.discountPrice || null,
+      sold: `Đã bán ${
+        item.soldCount >= 1000
+          ? (item.soldCount / 1000).toFixed(1) + "k"
+          : item.soldCount || 0
+      }`,
+      badge: buildBadge(item.price, item.discountPrice),
+      image: imageMap[item.images?.[0]] || item.images?.[0] || null,
+      categoryName: item.categoryId?.name || "Khác",
+      isLiked: item.likes?.includes(userId),
+      onLike: handleLike,
+    };
+  }, [user, handleLike]);
 
   const fetchCategoryProducts = useCallback(async () => {
     setLoading(true);

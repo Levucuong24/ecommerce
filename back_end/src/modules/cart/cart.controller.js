@@ -1,17 +1,24 @@
 const asyncHandler = require("../../middleware/asyncHandler");
 const cartService = require("./cart.service");
 
-const listCarts = asyncHandler(async (req, res) => {
-    const data = await cartService.getCarts(req.query);
+const addItemToCart = asyncHandler(async (req, res) => {
+    const { productId, quantity, replace } = req.body;
+    const data = await cartService.addToCart(req.user.id, productId, quantity || 1, replace);
     res.json(data);
 });
 
-const getCartDetail = asyncHandler(async (req, res) => {
-    const data = await cartService.getCartById(req.params.id);
+const getMyCart = asyncHandler(async (req, res) => {
+    const data = await cartService.getMyCart(req.user.id);
+    res.json(data || { items: [] });
+});
+
+const removeItemFromCart = asyncHandler(async (req, res) => {
+    const data = await cartService.removeFromCart(req.user.id, req.params.productId);
     res.json(data);
 });
 
 module.exports = {
-  getCarts: listCarts,
-  getCartById: getCartDetail,
+  addItemToCart,
+  getMyCart,
+  removeItemFromCart,
 };

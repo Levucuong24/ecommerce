@@ -36,9 +36,17 @@ function FlashSale({ products }) {
               ) : (
                 <span>{product.badge}</span>
               )}
+              <button 
+                className={`like-btn ${product.isLiked ? 'active' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  product.onLike?.(product.id);
+                }}
+              >
+                {product.isLiked ? "❤️" : "🤍"}
+              </button>
             </div>
             <h3>{product.name}</h3>
-            <div className="product-category-tag">{product.categoryName}</div>
             <strong>{formatPrice(product.price)}đ</strong>
             <span>{product.sold}</span>
           </article>
