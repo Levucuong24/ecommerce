@@ -14,7 +14,7 @@ function ForgotPasswordForm({ onSwitchToLogin }) {
     newPassword: "",
   });
 
-  const handleChange = (e) => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -106,13 +106,13 @@ function ForgotPasswordForm({ onSwitchToLogin }) {
               name="email"
               placeholder="you@example.com"
               value={formData.email}
-              onChange={handleChange}
+              onChange={handleInputChange}
               required
             />
           </label>
 
           <button type="submit" className="primary-button" disabled={isSubmitting}>
-            {isSubmitting ? "Đang gửi..." : "Gửi mã OTP"}
+            {isSubmitting ? "Đang gửi…" : "Gửi mã OTP"}
           </button>
         </form>
       ) : (
@@ -124,6 +124,7 @@ function ForgotPasswordForm({ onSwitchToLogin }) {
               name="email"
               value={formData.email}
               disabled
+              readOnly
             />
           </label>
 
@@ -134,7 +135,7 @@ function ForgotPasswordForm({ onSwitchToLogin }) {
               name="otp"
               placeholder="Nhập mã 6 số"
               value={formData.otp}
-              onChange={handleChange}
+              onChange={handleInputChange}
               required
             />
           </label>
@@ -146,13 +147,13 @@ function ForgotPasswordForm({ onSwitchToLogin }) {
               name="newPassword"
               placeholder="Nhập mật khẩu mới"
               value={formData.newPassword}
-              onChange={handleChange}
+              onChange={handleInputChange}
               required
             />
           </label>
 
           <button type="submit" className="primary-button" disabled={isSubmitting}>
-            {isSubmitting ? "Đang xử lý..." : "Đổi mật khẩu"}
+            {isSubmitting ? "Đang xử lý…" : "Đổi mật khẩu"}
           </button>
         </form>
       )}

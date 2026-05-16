@@ -6,6 +6,12 @@ import { imageMap } from "../home/utils";
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
+const currencyFormatter = new Intl.NumberFormat("vi-VN");
+
+const formatPrice = (price) => {
+  return currencyFormatter.format(price);
+};
+
 function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
   const navigate = useNavigate();
   const [cart, setCart] = useState(null);
@@ -86,8 +92,8 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
     }, 0);
   };
 
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat("vi-VN").format(price);
+  const formatPriceLocal = (price) => {
+    return formatPrice(price);
   };
 
   return (

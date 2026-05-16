@@ -21,6 +21,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
   const [reviewMessage, setReviewMessage] = useState("");
   const [isFollowingStore, setIsFollowingStore] = useState(false);
   const [isSubmittingFollow, setIsSubmittingFollow] = useState(false);
+  const [shopOnlineStatus, setShopOnlineStatus] = useState("");
 
   const fetchReviews = async () => {
     try {
@@ -48,6 +49,25 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
         if (data.shop && user) {
           const userId = user.id || user._id;
           setIsFollowingStore(data.shop.followers?.includes(userId));
+        }
+
+        // Calculate shop status on client to avoid hydration mismatch
+        if (data.shop) {
+          if (data.shop.isOnline) {
+            setShopOnlineStatus("Online");
+          } else {
+            const lastActive = data.shop.lastActive || data.shop.createdAt;
+            if (!lastActive) {
+              setShopOnlineStatus("Online vừa mới");
+            } else {
+              const lastActiveDate = new Date(lastActive);
+              const diff = Math.floor((new Date() - lastActiveDate) / 60000);
+              if (diff < 1) setShopOnlineStatus("Online vừa mới");
+              else if (diff < 60) setShopOnlineStatus(`Online ${diff} phút trước`);
+              else if (diff < 1440) setShopOnlineStatus(`Online ${Math.floor(diff / 60)} giờ trước`);
+              else setShopOnlineStatus(`Online ${Math.floor(diff / 1440)} ngày trước`);
+            }
+          }
         }
         fetchReviews();
       } catch (error) {
@@ -300,12 +320,20 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
               <div className="image-thumbnails">
                 {(product.images?.length > 0 ? product.images : [null, null, null, null, null]).map((img, idx) => (
                   <div 
-                    key={idx} 
+                    key={`${product._id}-thumb-${idx}`} 
+                    role="button"
+                    tabIndex={0}
                     className={`thumbnail ${idx === currentImageIdx ? 'active' : ''}`}
                     onClick={() => setCurrentImageIdx(idx)}
                     onMouseEnter={() => setCurrentImageIdx(idx)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setCurrentImageIdx(idx);
+                      }
+                    }}
                   >
-                    <img src={getImageUrl(img)} alt={`${product.name} ${idx}`} />
+                    <img src={getImageUrl(img)} alt={`${product.name} thumbnail ${idx + 1}`} />
                   </div>
                 ))}
               </div>
@@ -403,7 +431,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
                 <span className="promo-label">Màu Sắc</span>
                 <div className="variant-options">
                   {["Đèn xoay nước", "Đèn phía Bắc", "gợn nước"].map((variant, idx) => (
-                    <button key={idx} className="variant-btn">
+                    <button key={`${product._id}-variant-${idx}`} className="variant-btn">
                       <img src={variantImageUrl} alt={variant} />
                       {variant}
                     </button>
@@ -451,22 +479,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
                 <div className="shop-name">{product.shop.name}</div>
                 <div className="shop-online-status">
                   <span className={`status-dot ${product.shop.isOnline ? 'online' : 'offline'}`}></span>
-                  {product.shop.isOnline ? (
-                    "Online"
-                  ) : (
-                    `Online ${(() => {
-                      const lastActive = product.shop.lastActive || product.shop.createdAt;
-                      if (!lastActive) return "vừa mới";
-                      const lastActiveDate = new Date(lastActive);
-                      if (isNaN(lastActiveDate.getTime())) return "vừa mới";
-                      
-                      const diff = Math.floor((new Date() - lastActiveDate) / 60000);
-                      if (diff < 1) return "vừa mới";
-                      if (diff < 60) return `${diff} phút trước`;
-                      if (diff < 1440) return `${Math.floor(diff / 60)} giờ trước`;
-                      return `${Math.floor(diff / 1440)} ngày trước`;
-                    })()}`
-                  )}
+                  {shopOnlineStatus}
                 </div>
                 <div className="shop-actions">
                   <button 
@@ -562,7 +575,15 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
                     {[1, 2, 3, 4, 5].map((star) => (
                       <span
                         key={star}
-                        onClick={() => setReviewForm({ ...reviewForm, rating: star })}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setReviewForm(prev => ({ ...prev, rating: star }))}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setReviewForm(prev => ({ ...prev, rating: star }));
+                          }
+                        }}
                         style={{ opacity: star <= reviewForm.rating ? 1 : 0.3 }}
                       >
                         ★
