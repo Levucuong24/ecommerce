@@ -24,6 +24,7 @@ const mapProduct = (item) => ({
   }`,
   badge: buildBadge(item.price, item.discountPrice),
   image: imageMap[item.images?.[0]] || item.images?.[0] || null,
+  categoryName: item.categoryId?.name || "Khác",
 });
 
 function HomePage({ onOpenLogin, onOpenCart, user, onLogout }) {

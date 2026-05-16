@@ -19,6 +19,7 @@ const mapProduct = (item) => ({
   }`,
   badge: buildBadge(item.price, item.discountPrice),
   image: imageMap[item.images?.[0]] || item.images?.[0] || null,
+  categoryName: item.categoryId?.name || "Khác",
 });
 
 function CategoryPage({ user, onLogout, onOpenLogin, onOpenCart }) {
@@ -60,7 +61,7 @@ function CategoryPage({ user, onLogout, onOpenLogin, onOpenCart }) {
   }, [fetchCategoryProducts]);
 
   return (
-    <main className="home-page shopee-inspired">
+    <main className="category-page shopee-inspired">
       <Header
         user={user}
         onOpenLogin={onOpenLogin}
@@ -68,8 +69,8 @@ function CategoryPage({ user, onLogout, onOpenLogin, onOpenCart }) {
         onLogout={onLogout}
       />
 
-      <div className="admin-banner" style={{ marginBottom: '30px' }}>
-        <div className="admin-banner-content animate-fade">
+      <div className="category-banner">
+        <div className="category-banner-content animate-fade">
           <h1>{categoryName || "Danh mục"}</h1>
           <p>Khám phá các sản phẩm thuộc danh mục {categoryName}</p>
         </div>

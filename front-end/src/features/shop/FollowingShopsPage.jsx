@@ -60,7 +60,7 @@ function FollowingShopsPage({ user, onLogout, onOpenLogin, onOpenCart }) {
   };
 
   return (
-    <div className="home-page shopee-inspired">
+    <div className="following-shops-page shopee-inspired">
       <Header
         user={user}
         onOpenLogin={onOpenLogin}
@@ -68,7 +68,7 @@ function FollowingShopsPage({ user, onLogout, onOpenLogin, onOpenCart }) {
         onLogout={onLogout}
         onSearch={handleSearch}
       />
-      <main className="content-shell" style={{ padding: "40px 20px" }}>
+      <main className="content-shell following-shops-content">
         <div 
           className="back-to-home" 
           onClick={() => navigate("/home")}

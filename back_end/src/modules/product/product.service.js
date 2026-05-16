@@ -4,10 +4,12 @@ const notificationService = require("../notification/notification.service");
 const slugify = require("../../utils/slugify");
 const mongoose = require("mongoose");
 
-const getProducts = async (query) => listResources(Product, query);
+const getProducts = async (query) => listResources(Product, query, "categoryId");
 
 const getProductById = async (id) => {
-  const product = await Product.findById(id).populate("createdBy", "name avatar createdAt");
+  const product = await Product.findById(id)
+    .populate("createdBy", "name avatar createdAt")
+    .populate("categoryId");
   if (!product) {
     const error = new Error("Product not found");
     error.statusCode = 404;

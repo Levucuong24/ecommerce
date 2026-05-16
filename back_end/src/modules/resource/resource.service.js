@@ -5,10 +5,12 @@ const {
   buildPaginationMeta,
 } = require("../../utils/pagination");
 
-const listResources = async (Model, query = {}) => {
+const listResources = async (Model, query = {}, populateOptions = null) => {
   const { limit, page, skip } = buildPagination(query);
   const features = new ApiFeatures(Model.find(), query)
+    .filter()
     .search(["name", "title", "code", "email"])
+    .populate(populateOptions)
     .sort()
     .limitFields()
     .paginate({ page, limit, skip });

@@ -268,6 +268,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
               <span className="favorite-badge">Yêu thích</span>
               {product.name}
             </h1>
+            <div className="product-category-tag" style={{ marginBottom: '15px' }}>{product.categoryId?.name}</div>
             
             <div className="product-rating-row">
               <div className="rating-block">
@@ -467,7 +468,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
           <div className="spec-table">
             <div className="spec-table-row">
               <span className="spec-table-label">Danh Mục</span>
-              <span className="spec-table-value">Shopee {">"} Thiết Bị Điện Gia Dụng {">"} Đèn {">"} Đèn Ngủ</span>
+              <span className="spec-table-value">Shopee {">"} {product.categoryId?.name || "Khác"}</span>
             </div>
             <div className="spec-table-row">
               <span className="spec-table-label">Thương hiệu</span>

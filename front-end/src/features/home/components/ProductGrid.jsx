@@ -42,6 +42,7 @@ function ProductGrid({ products }) {
             </div>
             <div className="product-body">
               <h3>{product.name}</h3>
+              <div className="product-category-tag">{product.categoryName}</div>
               <strong>{formatPrice(product.price)}đ</strong>
               <div className="product-meta">
                 <span>{product.sold}</span>

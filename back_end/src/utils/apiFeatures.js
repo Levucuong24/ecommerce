@@ -4,6 +4,20 @@ class ApiFeatures {
     this.queryString = queryString;
   }
 
+  filter() {
+    const queryObj = { ...this.queryString };
+    const excludedFields = ["page", "sort", "limit", "fields", "keyword", "sortBy"];
+    excludedFields.forEach((el) => delete queryObj[el]);
+
+    // Advanced filtering
+    let queryStr = JSON.stringify(queryObj);
+    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
+
+    this.query = this.query.find(JSON.parse(queryStr));
+
+    return this;
+  }
+
   search(searchableFields = []) {
     const keyword = this.queryString.keyword?.trim();
 
@@ -37,6 +51,13 @@ class ApiFeatures {
   paginate({ page, limit, skip }) {
     this.query = this.query.skip(skip).limit(limit);
     this.pagination = { page, limit, skip };
+    return this;
+  }
+
+  populate(populateOptions) {
+    if (populateOptions) {
+      this.query = this.query.populate(populateOptions);
+    }
     return this;
   }
 
