@@ -9,5 +9,6 @@ router.post("/login", authController.login);
 router.get("/me", protect, authController.me);
 router.post("/forgot-password", authController.forgotPassword);
 router.post("/reset-password", authController.resetPassword);
+router.post("/google", authController.googleLogin);
 
 module.exports = router;

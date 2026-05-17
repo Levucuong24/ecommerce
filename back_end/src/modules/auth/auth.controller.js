@@ -28,10 +28,17 @@ const resetPassword = asyncHandler(async (req, res) => {
     sendResponse(res, 200, "Password reset successfully", null);
 });
 
+const googleLogin = asyncHandler(async (req, res) => {
+    const { credential } = req.body;
+    const { token, user } = await authService.googleLogin(credential);
+    sendResponse(res, 200, "Google login successful", { token, user });
+});
+
 module.exports = {
   register,
   login,
   me,
   forgotPassword,
   resetPassword,
+  googleLogin,
 };

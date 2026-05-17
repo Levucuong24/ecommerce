@@ -1,3 +1,5 @@
+import { GoogleLogin } from "@react-oauth/google";
+
 function LoginForm({
   formData,
   isSubmitting,
@@ -7,6 +9,7 @@ function LoginForm({
   onSubmit,
   onSwitchToRegister,
   onSwitchToForgotPassword,
+  onGoogleLogin,
 }) {
   return (
     <>
@@ -69,10 +72,15 @@ function LoginForm({
         <span>Hoặc tiếp tục với</span>
       </div>
 
-      <div className="social-actions">
-        <button type="button" className="secondary-button">
-          Google
-        </button>
+      <div className="social-actions" style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+        <GoogleLogin
+          onSuccess={onGoogleLogin}
+          onError={() => alert("Đăng nhập Google thất bại. Vui lòng thử lại.")}
+          text="signin_with"
+          shape="rectangular"
+          locale="vi"
+          size="large"
+        />
         <button type="button" className="secondary-button">
           Facebook
         </button>

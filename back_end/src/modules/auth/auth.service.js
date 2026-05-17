@@ -1,9 +1,12 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
+const { OAuth2Client } = require("google-auth-library");
 
 const { User } = require("../../models");
 const generateToken = require("../../utils/generateToken");
 const sendEmail = require("../../utils/sendEmail");
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const sanitizeUser = (user) => {
   if (!user) return null;
@@ -170,10 +173,54 @@ const resetPassword = async (email, otp, newPassword) => {
   return { success: true };
 };
 
+const googleLogin = async (credential) => {
+  if (!credential) {
+    const error = new Error("Credential Google là bắt buộc");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const ticket = await googleClient.verifyIdToken({
+    idToken: credential,
+    audience: process.env.GOOGLE_CLIENT_ID,
+  });
+
+  const payload = ticket.getPayload();
+  const { sub: googleId, email, name, picture } = payload;
+
+  let user = await User.findOne({ $or: [{ googleId }, { email }] });
+
+  if (!user) {
+    // First time login with Google: create new account
+    user = await User.create({
+      _id: new mongoose.Types.ObjectId(),
+      name,
+      email,
+      password: undefined,
+      googleId,
+      avatar: picture,
+      role: "customer",
+      isVerified: true,
+      createdAt: new Date(),
+    });
+  } else if (!user.googleId) {
+    // Existing email account: link Google ID
+    user.googleId = googleId;
+    if (!user.avatar) user.avatar = picture;
+    await user.save();
+  }
+
+  return {
+    token: generateToken(user),
+    user: sanitizeUser(user),
+  };
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getCurrentUser,
   forgotPassword,
   resetPassword,
+  googleLogin,
 };

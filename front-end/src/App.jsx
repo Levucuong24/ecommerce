@@ -65,10 +65,33 @@ function App() {
     navigate("/home");
   };
 
-  const getDefaultRouteByRole = (role) => {
+  const handleGoogleLogin = async (credentialResponse) => {
+    try {
+      const response = await fetch(`${apiUrl}/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential: credentialResponse.credential }),
+      });
+      const data = await response.json();
+      if (response.ok && data.user) {
+        saveAuthSession(data.token, data.user, false);
+        setUser(data.user);
+        const userId = data.user._id || data.user.id;
+        navigate(getDefaultRouteByRole(data.user.role, userId));
+      } else {
+        setMessage(data.message || "Đăng nhập Google thất bại");
+        setMessageType("error");
+      }
+    } catch (err) {
+      setMessage("Không thể kết nối đến máy chủ");
+      setMessageType("error");
+    }
+  };
+
+  const getDefaultRouteByRole = (role, userId) => {
     if (role === "admin") return "/admin";
     if (role === "staff") return "/staff";
-    return "/home";
+    return userId ? `/home/${userId}` : "/home";
   };
 
   const handleLogout = async () => {
@@ -169,7 +192,8 @@ function App() {
         setMessageType("success");
 
         setTimeout(() => {
-          navigate(getDefaultRouteByRole(userRole));
+          const userId = data.user?._id || data.user?.id;
+          navigate(getDefaultRouteByRole(userRole, userId));
         }, 1000);
       }
     } catch (error) {
@@ -265,6 +289,17 @@ function App() {
           />
         }
       />
+      <Route
+        path="/home/:userId"
+        element={
+          <HomePage
+            user={user}
+            onLogout={handleLogout}
+            onOpenLogin={() => openAuthPage("login")}
+            onOpenCart={openCartPage}
+          />
+        }
+      />
       <Route 
         path="/cart" 
         element={
@@ -345,6 +380,7 @@ function App() {
                 onSubmit={handleLoginSubmit}
                 onSwitchToRegister={() => switchMode("register")}
                 onSwitchToForgotPassword={() => switchMode("forgotPassword")}
+                onGoogleLogin={handleGoogleLogin}
               />
             ) : mode === "forgotPassword" ? (
               <ForgotPasswordForm onSwitchToLogin={() => switchMode("login")} />
