@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Logo from "../../components/Logo";
 import { getAuthToken } from "../../utils/authStorage";
-import { imageMap } from "../home/utils";
+import { imageMap, mockVouchers } from "../home/utils";
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -16,6 +16,13 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
   const navigate = useNavigate();
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [savedVoucherIds, setSavedVoucherIds] = useState([]);
+  const [selectedVoucherId, setSelectedVoucherId] = useState("");
+
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem("savedVouchers") || "[]");
+    setSavedVoucherIds(saved);
+  }, []);
 
   const fetchCart = useCallback(async () => {
     if (!user) {
@@ -84,13 +91,31 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
     }
   };
 
-  const calculateTotal = () => {
+  const calculateSubtotal = () => {
     if (!cart) return 0;
     return cart.items.reduce((sum, item) => {
       const price = item.productId.discountPrice || item.productId.price || 0;
       return sum + price * item.quantity;
     }, 0);
   };
+
+  const selectedVoucher = mockVouchers.find(v => v.id === selectedVoucherId);
+
+  const calculateDiscount = (subtotal) => {
+    if (!selectedVoucher) return 0;
+    if (subtotal < selectedVoucher.minOrder) return 0;
+
+    if (selectedVoucher.type === 'percent') {
+      return (subtotal * selectedVoucher.discountPercent) / 100;
+    } else if (selectedVoucher.type === 'fixed') {
+      return selectedVoucher.discountAmount;
+    }
+    return 0;
+  };
+
+  const subtotal = calculateSubtotal();
+  const discount = calculateDiscount(subtotal);
+  const total = subtotal - discount > 0 ? subtotal - discount : 0;
 
   const formatPriceLocal = (price) => {
     return formatPrice(price);
@@ -181,13 +206,45 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
 
             <div className="cart-summary-panel" style={{ background: "white", padding: "20px", borderRadius: "8px", height: "fit-content", position: "sticky", top: "174px" }}>
               <h3 style={{ marginTop: 0, marginBottom: "20px", fontSize: "18px" }}>Tổng Thanh Toán</h3>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "15px" }}>
+              
+              {savedVoucherIds.length > 0 && (
+                <div style={{ marginBottom: "20px", paddingBottom: "20px", borderBottom: "1px dashed #eee" }}>
+                  <label style={{ display: "block", marginBottom: "10px", fontWeight: "500", fontSize: "14px" }}>Chọn Voucher của bạn:</label>
+                  <select 
+                    value={selectedVoucherId} 
+                    onChange={(e) => setSelectedVoucherId(e.target.value)}
+                    style={{ width: "100%", padding: "10px", borderRadius: "4px", border: "1px solid #ddd", background: "#f9f9f9", outline: "none" }}
+                  >
+                    <option value="">Không chọn</option>
+                    {savedVoucherIds.map(vid => {
+                      const v = mockVouchers.find(mv => mv.id === vid);
+                      if (!v) return null;
+                      const isEligible = subtotal >= v.minOrder;
+                      return (
+                        <option key={vid} value={vid} disabled={!isEligible}>
+                          {v.title} {isEligible ? "" : `(Cần mua thêm ${formatPrice(v.minOrder - subtotal)}đ)`}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              )}
+
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "15px", color: "#555" }}>
                 <span>Tổng tiền hàng:</span>
-                <span>{formatPrice(calculateTotal())}đ</span>
+                <span>{formatPrice(subtotal)}đ</span>
               </div>
+              
+              {discount > 0 && (
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "15px", color: "var(--primary)" }}>
+                  <span>Giảm giá Voucher:</span>
+                  <span>-{formatPrice(discount)}đ</span>
+                </div>
+              )}
+
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px", fontWeight: "bold", fontSize: "18px", color: "var(--primary)" }}>
                 <span>Tổng cộng:</span>
-                <span>{formatPrice(calculateTotal())}đ</span>
+                <span>{formatPrice(total)}đ</span>
               </div>
               <button className="primary-btn" style={{ width: "100%", padding: "12px", fontSize: "16px" }}>
                 Mua Hàng
