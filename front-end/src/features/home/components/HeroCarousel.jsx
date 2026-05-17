@@ -1,7 +1,7 @@
 import { bannerImages, quickLinks } from "../utils";
 import "./HeroCarousel.css";
 
-function HeroCarousel({ currentSlide, setCurrentSlide }) {
+function HeroCarousel({ currentSlide, setCurrentSlide, onVoucherClick }) {
   return (
     <section className="hero-banner">
       <div className="hero-carousel">
@@ -42,7 +42,12 @@ function HeroCarousel({ currentSlide, setCurrentSlide }) {
 
       <div className="quick-entry-grid">
         {quickLinks.map((item) => (
-          <article key={item.label} className="quick-entry-card">
+          <article 
+            key={item.label} 
+            className="quick-entry-card"
+            onClick={item.label === "Voucher" ? onVoucherClick : undefined}
+            style={item.label === "Voucher" ? { cursor: 'pointer' } : {}}
+          >
             <div className="quick-entry-icon">
               <img src={item.icon} alt={item.label} />
             </div>

@@ -71,6 +71,10 @@ function HomePage({ onOpenLogin, onOpenCart, user, onLogout }) {
     }
   };
 
+  const handleVoucherClick = () => {
+    navigate('/vouchers');
+  };
+
   const mapProduct = useCallback((item) => {
     const userId = user?.id || user?._id;
     return {
@@ -136,6 +140,7 @@ function HomePage({ onOpenLogin, onOpenCart, user, onLogout }) {
       <HeroCarousel
         currentSlide={currentSlide}
         setCurrentSlide={setCurrentSlide}
+        onVoucherClick={handleVoucherClick}
       />
 
       <section className="content-shell">

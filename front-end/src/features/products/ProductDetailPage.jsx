@@ -4,6 +4,7 @@ import Header from "../home/components/Header";
 import { getAuthToken } from "../../utils/authStorage";
 import { imageMap, formatPrice } from "../home/utils";
 import { DATA_EVENTS, subscribeDataChanged } from "../../utils/realtimeEvents";
+import VoucherModal from "../../components/VoucherModal";
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -244,6 +245,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
   const handleVoucherClick = () => {
     if (!user) {
       alert("Vui lòng đăng nhập để xem và lưu mã giảm giá.");
+      onOpenLogin();
       return;
     }
     setShowVouchers(true);
@@ -409,8 +411,8 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
             <div className="product-promotions">
               <div className="promo-row">
                 <span className="promo-label">Mã Giảm Giá Của Shop</span>
-                <div className="promo-tags" onClick={handleVoucherClick} style={{ cursor: 'pointer' }}>
-                  <span className="shop-voucher">Giảm 17%</span>
+                <div className="promo-tags">
+                  <span className="shop-voucher" onClick={handleVoucherClick} style={{ cursor: 'pointer' }}>Giảm 17%</span>
                 </div>
               </div>
 
@@ -700,34 +702,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
         </div>
 
         {/* Voucher Modal */}
-        {showVouchers && (
-          <div className="voucher-modal-overlay" onClick={() => setShowVouchers(false)}>
-            <div className="voucher-modal" onClick={e => e.stopPropagation()}>
-              <div className="voucher-modal-header">
-                <h3>Mã Giảm Giá Của Shop</h3>
-                <button onClick={() => setShowVouchers(false)} className="close-btn">&times;</button>
-              </div>
-              <div className="voucher-list">
-                <div className="voucher-item">
-                  <div className="voucher-info">
-                    <h4>Giảm 17%</h4>
-                    <p>Đơn Tối Thiểu 100k</p>
-                    <p className="voucher-exp">HSD: 30/06/2026</p>
-                  </div>
-                  <button className="save-voucher-btn" onClick={() => alert("Đã lưu mã giảm giá!")}>Lưu</button>
-                </div>
-                <div className="voucher-item">
-                  <div className="voucher-info">
-                    <h4>Giảm 25K</h4>
-                    <p>Đơn Tối Thiểu 200k</p>
-                    <p className="voucher-exp">HSD: 30/06/2026</p>
-                  </div>
-                  <button className="save-voucher-btn" onClick={() => alert("Đã lưu mã giảm giá!")}>Lưu</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        {showVouchers && <VoucherModal onClose={() => setShowVouchers(false)} />}
       </section>
     </main>
   );

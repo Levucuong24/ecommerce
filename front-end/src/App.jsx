@@ -13,6 +13,7 @@ import FollowingShopsPage from "./features/shop/FollowingShopsPage";
 import AdminPage from "./features/admin/AdminPage";
 import StaffPage from "./features/staff/StaffPage";
 import LikedProductsPage from "./features/shop/LikedProductsPage";
+import VoucherPage from "./features/home/VoucherPage";
 import { clearAuthSession, getAuthUser, saveAuthSession, getAuthToken } from "./utils/authStorage";
 import { DATA_EVENTS, emitDataChanged } from "./utils/realtimeEvents";
 
@@ -312,6 +313,17 @@ function App() {
         path="/following-shops"
         element={
           <FollowingShopsPage
+            user={user}
+            onLogout={handleLogout}
+            onOpenLogin={() => openAuthPage("login")}
+            onOpenCart={openCartPage}
+          />
+        }
+      />
+      <Route
+        path="/vouchers"
+        element={
+          <VoucherPage
             user={user}
             onLogout={handleLogout}
             onOpenLogin={() => openAuthPage("login")}
