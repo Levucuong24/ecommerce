@@ -22,6 +22,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
   const [isFollowingStore, setIsFollowingStore] = useState(false);
   const [isSubmittingFollow, setIsSubmittingFollow] = useState(false);
   const [shopOnlineStatus, setShopOnlineStatus] = useState("");
+  const [showVouchers, setShowVouchers] = useState(false);
 
   const fetchReviews = async () => {
     try {
@@ -240,6 +241,14 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
     navigate(`/home`);
   };
 
+  const handleVoucherClick = () => {
+    if (!user) {
+      alert("Vui lòng đăng nhập để xem và lưu mã giảm giá.");
+      return;
+    }
+    setShowVouchers(true);
+  };
+
   if (loading) {
     return (
       <div className="loading-screen">
@@ -400,7 +409,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
             <div className="product-promotions">
               <div className="promo-row">
                 <span className="promo-label">Mã Giảm Giá Của Shop</span>
-                <div className="promo-tags">
+                <div className="promo-tags" onClick={handleVoucherClick} style={{ cursor: 'pointer' }}>
                   <span className="shop-voucher">Giảm 17%</span>
                 </div>
               </div>
@@ -689,6 +698,36 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
             )}
           </div>
         </div>
+
+        {/* Voucher Modal */}
+        {showVouchers && (
+          <div className="voucher-modal-overlay" onClick={() => setShowVouchers(false)}>
+            <div className="voucher-modal" onClick={e => e.stopPropagation()}>
+              <div className="voucher-modal-header">
+                <h3>Mã Giảm Giá Của Shop</h3>
+                <button onClick={() => setShowVouchers(false)} className="close-btn">&times;</button>
+              </div>
+              <div className="voucher-list">
+                <div className="voucher-item">
+                  <div className="voucher-info">
+                    <h4>Giảm 17%</h4>
+                    <p>Đơn Tối Thiểu 100k</p>
+                    <p className="voucher-exp">HSD: 30/06/2026</p>
+                  </div>
+                  <button className="save-voucher-btn" onClick={() => alert("Đã lưu mã giảm giá!")}>Lưu</button>
+                </div>
+                <div className="voucher-item">
+                  <div className="voucher-info">
+                    <h4>Giảm 25K</h4>
+                    <p>Đơn Tối Thiểu 200k</p>
+                    <p className="voucher-exp">HSD: 30/06/2026</p>
+                  </div>
+                  <button className="save-voucher-btn" onClick={() => alert("Đã lưu mã giảm giá!")}>Lưu</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
     </main>
   );
