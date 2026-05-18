@@ -288,20 +288,44 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
               <div className="cart-popup-content">
                 <div className="cart-popup-title">Sản Phẩm Mới Thêm</div>
                 <div className="cart-popup-list">
-                  {cart.items.slice(0, 5).map((item) => (
-                    <div key={item.productId?._id} className="cart-popup-item">
-                      <img src={item.productId?.images?.[0] || "/images/cart.png"} alt={item.productId?.name} />
-                      <div className="cart-popup-item-info">
-                        <div className="name">{item.productId?.name}</div>
-                        <div className="price-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <div className="price" style={{ color: "var(--primary)", fontWeight: "500" }}>
-                            {new Intl.NumberFormat("vi-VN").format(item.productId?.discountPrice || item.productId?.price || 0)}đ
+                  {cart.items.slice(0, 5).map((item) => {
+                    const price = (() => {
+                      if (item.color && item.productId?.colors) {
+                        const colorObj = item.productId.colors.find(c => c.name === item.color);
+                        if (colorObj) return colorObj.discountPrice || colorObj.price;
+                      }
+                      return item.productId?.discountPrice || item.productId?.price || 0;
+                    })();
+                    
+                    // Tìm ảnh của riêng màu sắc đó nếu có
+                    let itemImg = item.productId?.images?.[0];
+                    if (item.color && item.productId?.colors) {
+                      const colorObj = item.productId.colors.find(c => c.name === item.color);
+                      if (colorObj && colorObj.images?.[0]) {
+                        itemImg = colorObj.images[0];
+                      }
+                    }
+                    
+                    return (
+                      <div key={`${item.productId?._id}-${item.color || 'none'}`} className="cart-popup-item">
+                        <img src={itemImg || "/images/cart.png"} alt={item.productId?.name} />
+                        <div className="cart-popup-item-info">
+                          <div className="name">{item.productId?.name}</div>
+                          {item.color && (
+                            <div style={{ fontSize: "11px", color: "var(--primary)", background: "#fff5f5", padding: "1px 6px", borderRadius: "3px", display: "inline-block", marginTop: "2px", fontWeight: "600" }}>
+                              Màu: {item.color}
+                            </div>
+                          )}
+                          <div className="price-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "2px" }}>
+                            <div className="price" style={{ color: "var(--primary)", fontWeight: "500" }}>
+                              {new Intl.NumberFormat("vi-VN").format(price)}đ
+                            </div>
+                            <div className="quantity" style={{ color: "#888", fontSize: "12px" }}>x{item.quantity}</div>
                           </div>
-                          <div className="quantity" style={{ color: "#888", fontSize: "12px" }}>x{item.quantity}</div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 {cart.items.length > 5 && <div className="cart-popup-more">Và {cart.items.length - 5} sản phẩm khác</div>}
               </div>

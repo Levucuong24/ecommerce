@@ -11,6 +11,19 @@ const productSchema = new mongoose.Schema(
     stock: { type: Number, default: 0 },
     categoryId: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
     images: [String],
+    colors: {
+      type: [
+        {
+          name: { type: String, required: true },
+          hex: { type: String, default: "#cccccc" },
+          price: { type: Number, required: true },
+          discountPrice: { type: Number },
+          stock: { type: Number, default: 0 },
+          images: [String],
+        },
+      ],
+      default: [],
+    },
     attributes: { type: mongoose.Schema.Types.Mixed, default: {} },
     ratingAverage: { type: Number, default: 0 },
     ratingCount: { type: Number, default: 0 },

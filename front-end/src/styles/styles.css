@@ -74,6 +74,7 @@ a {
   display: grid;
   place-items: center;
   overflow: hidden;
+  position: relative;
 }
 
 .main-product-image {

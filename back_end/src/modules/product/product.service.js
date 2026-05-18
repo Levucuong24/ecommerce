@@ -83,6 +83,23 @@ const createProduct = async (userId, productData) => {
     }
   }
 
+  // Nếu có biến thể màu, tính tổng kho và giá thấp nhất từ các màu
+  if (productData.colors && productData.colors.length > 0) {
+    productData.stock = productData.colors.reduce((sum, c) => sum + (Number(c.stock) || 0), 0);
+    // Đặt giá sản phẩm = giá thấp nhất trong các màu (dùng cho tìm kiếm/lọc)
+    const prices = productData.colors.map(c => Number(c.price)).filter(p => p > 0);
+    if (prices.length > 0) {
+      productData.price = Math.min(...prices);
+    }
+    // Đặt discountPrice = giá khuyến mãi thấp nhất nếu có
+    const discountPrices = productData.colors
+      .filter(c => c.discountPrice)
+      .map(c => Number(c.discountPrice));
+    if (discountPrices.length > 0) {
+      productData.discountPrice = Math.min(...discountPrices);
+    }
+  }
+
   const slug = slugify(productData.name);
   
   const product = await Product.create({

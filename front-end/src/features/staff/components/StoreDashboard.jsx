@@ -134,29 +134,63 @@ function StoreDashboard({ store, token, onStoreUpdate }) {
                 <div style={{ overflowX: "auto" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
                     <thead>
-                      <tr style={{ borderBottom: "2px solid var(--border-color)", color: "var(--text-secondary)" }}>
-                        <th style={{ padding: "12px" }}>Tên sản phẩm</th>
-                        <th style={{ padding: "12px" }}>Giá (VNĐ)</th>
-                        <th style={{ padding: "12px" }}>Kho</th>
-                        <th style={{ padding: "12px" }}>Đã bán</th>
-                        <th style={{ padding: "12px" }}>Đánh giá</th>
-                      </tr>
+                        <tr style={{ borderBottom: "2px solid var(--border-color)", color: "var(--text-secondary)" }}>
+                          <th style={{ padding: "12px" }}>Tên sản phẩm</th>
+                          <th style={{ padding: "12px" }}>Màu sắc</th>
+                          <th style={{ padding: "12px" }}>Giá (VNĐ)</th>
+                          <th style={{ padding: "12px" }}>Kho</th>
+                          <th style={{ padding: "12px" }}>Đã bán</th>
+                          <th style={{ padding: "12px" }}>Đánh giá</th>
+                        </tr>
                     </thead>
                     <tbody>
-                      {products.map(p => (
-                        <tr key={p._id} style={{ borderBottom: "1px solid var(--border-color)" }}>
-                          <td style={{ padding: "12px", display: "flex", alignItems: "center", gap: "10px" }}>
-                            {p.images?.[0] ? <img src={p.images[0]} style={{ width: "40px", height: "40px", objectFit: "cover", borderRadius: "4px" }} /> : <div style={{ width: "40px", height: "40px", background: "#eee", borderRadius: "4px" }} />}
-                            <span style={{ fontWeight: "500", maxWidth: "200px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</span>
-                          </td>
-                          <td style={{ padding: "12px" }}>{formatPrice(p.discountPrice || p.price)}</td>
-                          <td style={{ padding: "12px" }}>{p.stock}</td>
-                          <td style={{ padding: "12px" }}>{p.soldCount || 0}</td>
-                          <td style={{ padding: "12px" }}>
-                            <span style={{ color: "var(--warning)" }}>★</span> {p.ratingAverage || 0} ({p.ratingCount || 0})
-                          </td>
-                        </tr>
-                      ))}
+                        {products.map(p => (
+                          <tr key={p._id} style={{ borderBottom: "1px solid var(--border-color)" }}>
+                            <td style={{ padding: "12px", display: "flex", alignItems: "center", gap: "10px" }}>
+                              {p.images?.[0] ? <img src={p.images[0]} style={{ width: "40px", height: "40px", objectFit: "cover", borderRadius: "4px" }} /> : <div style={{ width: "40px", height: "40px", background: "#eee", borderRadius: "4px" }} />}
+                              <span style={{ fontWeight: "500", maxWidth: "200px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</span>
+                            </td>
+                            <td style={{ padding: "12px" }}>
+                              {p.colors && p.colors.length > 0 ? (
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", alignItems: "center" }}>
+                                  {p.colors.map((c, idx) => (
+                                    <div
+                                      key={idx}
+                                      title={`${c.name} · Giá: ${formatPrice(c.discountPrice || c.price)}₫ · Kho: ${c.stock}`}
+                                      style={{
+                                        width: "20px", height: "20px", borderRadius: "50%",
+                                        background: c.hex || "#ccc",
+                                        border: "2px solid rgba(0,0,0,0.15)",
+                                        flexShrink: 0,
+                                        cursor: "help",
+                                      }}
+                                    />
+                                  ))}
+                                  <span style={{ fontSize: "11px", color: "var(--text-secondary)", marginLeft: "2px" }}>
+                                    {p.colors.length} màu
+                                  </span>
+                                </div>
+                              ) : (
+                                <span style={{ color: "var(--text-muted, #94a3b8)", fontSize: "12px" }}>—</span>
+                              )}
+                            </td>
+                            <td style={{ padding: "12px" }}>
+                              {p.colors && p.colors.length > 0 ? (() => {
+                                const prices = p.colors.map(c => c.discountPrice || c.price);
+                                const min = Math.min(...prices);
+                                const max = Math.max(...prices);
+                                return min === max
+                                  ? <span style={{ color: "var(--shopee-red)", fontWeight: "500" }}>{formatPrice(min)}</span>
+                                  : <span style={{ color: "var(--shopee-red)", fontWeight: "500" }}>{formatPrice(min)} – {formatPrice(max)}</span>;
+                              })() : formatPrice(p.discountPrice || p.price)}
+                            </td>
+                            <td style={{ padding: "12px" }}>{p.stock}</td>
+                            <td style={{ padding: "12px" }}>{p.soldCount || 0}</td>
+                            <td style={{ padding: "12px" }}>
+                              <span style={{ color: "var(--warning)" }}>★</span> {p.ratingAverage || 0} ({p.ratingCount || 0})
+                            </td>
+                          </tr>
+                        ))}
                     </tbody>
                   </table>
                 </div>

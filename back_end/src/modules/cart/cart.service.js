@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const Cart = require("../../models/cart.model");
 
-const addToCart = async (userId, productId, quantity, replace = false) => {
+const addToCart = async (userId, productId, quantity, replace = false, color = null) => {
   let cart = await Cart.findOne({ userId });
   if (!cart) {
     cart = new Cart({
@@ -12,7 +12,9 @@ const addToCart = async (userId, productId, quantity, replace = false) => {
     });
   }
 
-  const itemIndex = cart.items.findIndex(item => item.productId.toString() === productId);
+  const itemIndex = cart.items.findIndex(
+    item => item.productId.toString() === productId && item.color === (color || null)
+  );
   if (itemIndex > -1) {
     if (replace) {
       cart.items[itemIndex].quantity = quantity;
@@ -20,7 +22,7 @@ const addToCart = async (userId, productId, quantity, replace = false) => {
       cart.items[itemIndex].quantity += quantity;
     }
   } else {
-    cart.items.push({ productId, quantity });
+    cart.items.push({ productId, quantity, color: color || null });
   }
 
   cart.updatedAt = new Date();
@@ -32,10 +34,12 @@ const getMyCart = async (userId) => {
   return Cart.findOne({ userId }).populate("items.productId");
 };
 
-const removeFromCart = async (userId, productId) => {
+const removeFromCart = async (userId, productId, color = null) => {
   const cart = await Cart.findOne({ userId });
   if (cart) {
-    cart.items = cart.items.filter(item => item.productId.toString() !== productId);
+    cart.items = cart.items.filter(
+      item => !(item.productId.toString() === productId && item.color === (color || null))
+    );
     cart.updatedAt = new Date();
     await cart.save();
   }
