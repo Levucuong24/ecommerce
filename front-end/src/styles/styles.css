@@ -812,16 +812,32 @@ a {
 }
 
 .user-avatar-mini {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: var(--primary-soft);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fff, #f1f5f9 80%);
   color: var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  box-shadow: inset 0 0 0 1px hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.1);
+  font-size: 1.1rem;
+  border: 2px solid var(--border);
+  box-shadow: 0px 2px 8px rgba(30, 41, 59, 0.05);
+  transition: box-shadow 0.2s, border-color 0.2s, background 0.2s;
+  overflow: hidden;
+}
+.user-avatar-mini img {
+  width: 90%;
+  height: 90%;
+  object-fit: cover;
+  border-radius: 50%;
+  background: #fff;
+}
+.user-avatar-mini:hover {
+  box-shadow: 0 4px 16px rgba(100, 116, 139, 0.09);
+  border-color: var(--primary-hover);
+  background: #e0e7ef;
 }
 
 .admin-shop-logo {

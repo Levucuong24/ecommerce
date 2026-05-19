@@ -46,8 +46,19 @@ const removeFromCart = async (userId, productId, color = null) => {
   return cart.populate("items.productId");
 };
 
+const clearCart = async (userId) => {
+  const cart = await Cart.findOne({ userId });
+  if (cart) {
+    cart.items = [];
+    cart.updatedAt = new Date();
+    await cart.save();
+  }
+  return cart;
+};
+
 module.exports = {
   addToCart,
   getMyCart,
   removeFromCart,
+  clearCart,
 };

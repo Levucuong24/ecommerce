@@ -18,8 +18,14 @@ const removeItemFromCart = asyncHandler(async (req, res) => {
     res.json(data);
 });
 
+const clearMyCart = asyncHandler(async (req, res) => {
+    const data = await cartService.clearCart(req.user.id);
+    res.json(data);
+});
+
 module.exports = {
   addItemToCart,
   getMyCart,
   removeItemFromCart,
+  clearMyCart,
 };

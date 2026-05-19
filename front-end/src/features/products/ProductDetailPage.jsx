@@ -328,6 +328,29 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
     setCurrentImageIdx((prev) => (prev - 1 + activeImages.length) % activeImages.length);
   };
 
+  // Khi click vào thumbnail, cập nhật cả ảnh lẫn màu tương ứng
+  const handleThumbnailClick = (idx) => {
+    setCurrentImageIdx(idx);
+
+    const mainImagesCount = (product?.images || []).length;
+
+    if (idx < mainImagesCount) {
+      // Ảnh gốc của sản phẩm → bỏ chọn màu
+      setSelectedColor(null);
+    } else {
+      // Tìm màu nào sở hữu ảnh tại vị trí idx
+      let offset = mainImagesCount;
+      for (const color of (product?.colors || [])) {
+        const colorImages = color.images || [];
+        if (idx < offset + colorImages.length) {
+          setSelectedColor(color);
+          break;
+        }
+        offset += colorImages.length;
+      }
+    }
+  };
+
   const getImageUrl = (img) => {
     if (!img) return "/images/iphone15pro.png";
     return imageMap[img] || img;
@@ -424,11 +447,11 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
                     role="button"
                     tabIndex={0}
                     className={`thumbnail ${idx === currentImageIdx ? 'active' : ''}`}
-                    onClick={() => setCurrentImageIdx(idx)}
+                    onClick={() => handleThumbnailClick(idx)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
-                        setCurrentImageIdx(idx);
+                        handleThumbnailClick(idx);
                       }
                     }}
                   >

@@ -1,7 +1,9 @@
-import { bannerImages, quickLinks } from "../utils";
+import { quickLinks } from "../utils";
 import "./HeroCarousel.css";
 
-function HeroCarousel({ currentSlide, setCurrentSlide, onVoucherClick }) {
+function HeroCarousel({ currentSlide, setCurrentSlide, onVoucherClick, banners }) {
+  const displayBanners = banners && banners.length > 0 ? banners : [];
+
   return (
     <section className="hero-banner">
       <div className="hero-carousel">
@@ -9,7 +11,7 @@ function HeroCarousel({ currentSlide, setCurrentSlide, onVoucherClick }) {
           className="hero-carousel-track" 
           style={{ transform: `translateX(-${currentSlide * 100}%)` }}
         >
-          {bannerImages.map((src, index) => (
+          {displayBanners.map((src, index) => (
             <div className="hero-carousel-slide" key={index}>
               <img src={src} alt={`Banner ${index + 1}`} />
             </div>
@@ -18,19 +20,19 @@ function HeroCarousel({ currentSlide, setCurrentSlide, onVoucherClick }) {
         <button 
           type="button" 
           className="carousel-btn prev" 
-          onClick={() => setCurrentSlide(prev => (prev === 0 ? bannerImages.length - 1 : prev - 1))}
+          onClick={() => setCurrentSlide(prev => (prev === 0 ? displayBanners.length - 1 : prev - 1))}
         >
           &#10094;
         </button>
         <button 
           type="button" 
           className="carousel-btn next" 
-          onClick={() => setCurrentSlide(prev => (prev + 1) % bannerImages.length)}
+          onClick={() => setCurrentSlide(prev => (prev + 1) % displayBanners.length)}
         >
           &#10095;
         </button>
         <div className="carousel-dots">
-          {bannerImages.map((_, index) => (
+          {displayBanners.map((_, index) => (
             <span 
               key={index} 
               className={`dot ${currentSlide === index ? 'active' : ''}`}

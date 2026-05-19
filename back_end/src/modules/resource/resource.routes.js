@@ -6,6 +6,7 @@ const {
   Wishlist,
   Coupon,
   Notification,
+  Banner,
 } = require("../../models");
 const {
   createListHandler,
@@ -52,5 +53,14 @@ router.get("/coupons/:id", createDetailHandler(Coupon));
 
 router.get("/notifications", createListHandler(Notification));
 router.get("/notifications/:id", createDetailHandler(Notification));
+
+router.get("/banners", createListHandler(Banner));
+router.get("/banners/:id", createDetailHandler(Banner));
+router.post("/banners", protect, authorize("admin"), createResourceHandler(Banner));
+router.put("/banners/:id", protect, authorize("admin"), createResourceHandler(Banner)); // reuse handler if possible or implement update
+router.delete("/banners/:id", protect, authorize("admin"), async (req, res) => {
+  await Banner.findByIdAndDelete(req.params.id);
+  res.json({ message: "Deleted" });
+});
 
 module.exports = router;

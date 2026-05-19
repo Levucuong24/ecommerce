@@ -11,4 +11,5 @@ module.exports = {
   Coupon: require("./coupon.model"),
   Notification: require("./notification.model"),
   Store: require("./store.model"),
+  Banner: require("./banner.model"),
 };

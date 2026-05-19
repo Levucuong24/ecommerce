@@ -11,6 +11,7 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
   const [activeTab, setActiveTab] = useState("users");
   const [stores, setStores] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [banners, setBanners] = useState([]);
   const [newCategoryName, setNewCategoryName] = useState("");
 
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
@@ -19,7 +20,8 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
     if (user?.role === "admin") {
       if (activeTab === "users") fetchUsers();
       else if (activeTab === "stores") fetchStores();
-      else fetchCategories();
+      else if (activeTab === "categories") fetchCategories();
+      else fetchBanners();
     } else {
       setLoading(false);
     }
@@ -97,6 +99,20 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
     }
   };
 
+  const fetchBanners = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/banners`);
+      if (!response.ok) throw new Error("Không thể tải danh sách banner");
+      const data = await response.json();
+      setBanners(data.items || data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAddCategory = async (e) => {
     e.preventDefault();
     if (!newCategoryName.trim()) return;
@@ -150,6 +166,75 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
       alert("Cập nhật quyền thành công!");
     } catch (err) {
       alert(`Lỗi: ${err.message}`);
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const handleUploadBanner = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUpdating("banner-upload");
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      const token = getAuthToken();
+      const uploadRes = await fetch(`${API_URL}/upload`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!uploadRes.ok) throw new Error("Lỗi tải ảnh lên");
+
+      const { url } = await uploadRes.json();
+      const bannerRes = await fetch(`${API_URL}/banners`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          image: url,
+          order: banners.length,
+          active: true
+        }),
+      });
+
+      if (!bannerRes.ok) throw new Error("Lỗi lưu banner");
+
+      alert("Thêm banner thành công!");
+      fetchBanners();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const handleDeleteBanner = async (bannerId) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa banner này?")) return;
+    
+    setUpdating(bannerId);
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/banners/${bannerId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error("Xóa banner thất bại");
+      
+      alert("Đã xóa banner!");
+      fetchBanners();
+    } catch (err) {
+      alert(err.message);
     } finally {
       setUpdating(null);
     }
@@ -224,6 +309,12 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
                 onClick={() => setActiveTab("categories")}
               >
                 📁 Danh mục
+              </button>
+              <button 
+                className={`tab-btn ${activeTab === "banners" ? "active" : ""}`}
+                onClick={() => setActiveTab("banners")}
+              >
+                🖼️ Banners
               </button>
             </div>
 
@@ -374,7 +465,7 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
                     </tbody>
                   </table>
                 </div>
-              ) : (
+              ) : activeTab === "categories" ? (
                 <div style={{ display: "grid", gridTemplateColumns: "350px 1fr", gap: "20px" }}>
                   <div className="admin-table-wrapper" style={{ padding: "24px", height: "fit-content" }}>
                     <h3>Thêm danh mục mới</h3>
@@ -417,6 +508,41 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                </div>
+              ) : (
+                <div className="admin-table-wrapper" style={{ padding: "24px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                    <h3>Quản lý Banner Trang chủ</h3>
+                    <label className="grant-btn" style={{ cursor: "pointer" }}>
+                      {updating === "banner-upload" ? "Đang tải lên..." : "➕ Thêm Banner Mới"}
+                      <input type="file" hidden accept="image/*" onChange={handleUploadBanner} disabled={updating === "banner-upload"} />
+                    </label>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "20px" }}>
+                    {banners.length === 0 ? (
+                      <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "40px", color: "#64748b" }}>
+                        Chưa có banner tùy chỉnh nào. Hệ thống đang sử dụng banner mặc định.
+                      </div>
+                    ) : (
+                      banners.map((b) => (
+                        <div key={b._id} className="banner-admin-card" style={{ border: "1px solid #e2e8f0", borderRadius: "8px", overflow: "hidden", background: "#f8fafc" }}>
+                          <img src={b.image} alt="Banner" style={{ width: "100%", height: "150px", objectFit: "cover" }} />
+                          <div style={{ padding: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span style={{ fontSize: "12px", color: "#64748b" }}>Thứ tự: {b.order}</span>
+                            <button 
+                              className="revoke-btn" 
+                              style={{ padding: "4px 10px", fontSize: "12px" }}
+                              onClick={() => handleDeleteBanner(b._id)}
+                              disabled={updating === b._id}
+                            >
+                              {updating === b._id ? "..." : "Xóa"}
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               )}

@@ -16,6 +16,7 @@ function HomePage({ onOpenLogin, onOpenCart, user, onLogout }) {
   const [categories, setCategories] = useState([]);
   const [flashSaleProducts, setFlashSaleProducts] = useState([]);
   const [products, setProducts] = useState([]);
+  const [banners, setBanners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -23,9 +24,10 @@ function HomePage({ onOpenLogin, onOpenCart, user, onLogout }) {
     if (showLoading) setLoading(true);
 
     try {
-      const [catRes, allProductRes] = await Promise.all([
+      const [catRes, allProductRes, bannerRes] = await Promise.all([
         fetch(`${apiUrl}/categories?limit=100`),
         fetch(`${apiUrl}/products?limit=12&sortBy=-soldCount`),
+        fetch(`${apiUrl}/banners?active=true&sortBy=order`),
       ]);
 
       const catData = await catRes.json();
@@ -42,6 +44,17 @@ function HomePage({ onOpenLogin, onOpenCart, user, onLogout }) {
         );
         setFlashSaleProducts(saleItems);
         setProducts(allMapped);
+      }
+
+      if (bannerRes.ok) {
+        const bannerData = await bannerRes.json();
+        if (Array.isArray(bannerData.items) && bannerData.items.length > 0) {
+          setBanners(bannerData.items.map(b => b.image));
+        } else {
+          setBanners(bannerImages);
+        }
+      } else {
+        setBanners(bannerImages);
       }
     } catch (err) {
       console.error("Loi tai du lieu:", err);
@@ -141,6 +154,7 @@ function HomePage({ onOpenLogin, onOpenCart, user, onLogout }) {
         currentSlide={currentSlide}
         setCurrentSlide={setCurrentSlide}
         onVoucherClick={handleVoucherClick}
+        banners={banners}
       />
 
       <section className="content-shell">

@@ -87,6 +87,9 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
   };
 
   const removeItem = async (productId, color) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng?")) {
+      return;
+    }
     try {
       const url = color 
         ? `${apiUrl}/cart/${productId}?color=${encodeURIComponent(color)}`
@@ -102,6 +105,25 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
       }
     } catch (error) {
       console.error("Lỗi khi xóa sản phẩm khỏi giỏ hàng:", error);
+    }
+  };
+
+  const clearCart = async () => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa tất cả sản phẩm khỏi giỏ hàng?")) {
+      return;
+    }
+    try {
+      const response = await fetch(`${apiUrl}/cart`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+      });
+      if (response.ok) {
+        fetchCart();
+      }
+    } catch (error) {
+      console.error("Lỗi khi xóa toàn bộ giỏ hàng:", error);
     }
   };
 
@@ -165,12 +187,19 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
         ) : (
           <div className="cart-container" style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: "20px" }}>
             <div className="cart-items-list" style={{ background: "white", borderRadius: "8px", overflow: "hidden" }}>
-              <div className="cart-header-row" style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 100px", padding: "15px", borderBottom: "1px solid #eee", fontSize: "14px", color: "#888" }}>
+              <div className="cart-header-row" style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 100px", padding: "15px", borderBottom: "1px solid #eee", fontSize: "14px", color: "#888", alignItems: "center" }}>
                 <span>Sản Phẩm</span>
                 <span style={{ textAlign: "center" }}>Đơn Giá</span>
                 <span style={{ textAlign: "center" }}>Số Lượng</span>
                 <span style={{ textAlign: "center" }}>Số Tiền</span>
-                <span style={{ textAlign: "center" }}>Thao Tác</span>
+                <div style={{ textAlign: "center" }}>
+                  <button 
+                    onClick={clearCart}
+                    style={{ background: "none", color: "var(--primary)", border: "none", cursor: "pointer", fontSize: "13px", fontWeight: "600" }}
+                  >
+                    Xóa tất cả
+                  </button>
+                </div>
               </div>
               
               {cart.items.map((item) => {
