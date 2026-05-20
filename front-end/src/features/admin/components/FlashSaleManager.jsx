@@ -1,6 +1,40 @@
 import React, { useState, useEffect } from "react";
 import { getAuthToken } from "../../../utils/authStorage";
 
+const getFlashSaleStatus = (product) => {
+  const now = new Date();
+  const startTime = product.flashSaleStartTime ? new Date(product.flashSaleStartTime) : null;
+  const endTime = product.flashSaleEndTime ? new Date(product.flashSaleEndTime) : null;
+
+  if (!product.isFlashSale || (endTime && endTime < now)) {
+    return { label: "Tắt", background: "#fee2e2", color: "#ef4444" };
+  }
+
+  if (startTime && startTime > now) {
+    return { label: "Sắp diễn ra", background: "#fef3c7", color: "#d97706" };
+  }
+
+  return { label: "Đang bật", background: "#dcfce7", color: "#16a34a" };
+};
+
+const FlashSaleStatusBadge = ({ product }) => {
+  const status = getFlashSaleStatus(product);
+
+  return (
+    <span
+      style={{
+        background: status.background,
+        color: status.color,
+        padding: "4px 8px",
+        borderRadius: "4px",
+        fontSize: "12px",
+      }}
+    >
+      {status.label}
+    </span>
+  );
+};
+
 const FlashSaleManager = ({ apiUrl }) => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -104,13 +138,15 @@ const FlashSaleManager = ({ apiUrl }) => {
                     <td>{p.name}</td>
                     <td>{p.price?.toLocaleString()} VND</td>
                     <td>
+                      <FlashSaleStatusBadge product={p} />
                       <span
                         style={{
-                          background: p.isFlashSale ? "#dcfce7" : "#fee2e2",
-                          color: p.isFlashSale ? "#16a34a" : "#ef4444",
+                          background: getFlashSaleStatus(p).background,
+                          color: getFlashSaleStatus(p).color,
                           padding: "4px 8px",
                           borderRadius: "4px",
                           fontSize: "12px",
+                          display: "none",
                         }}
                       >
                         {p.isFlashSale ? "🔥 Đang giảm" : "❌ Không"}

@@ -4,9 +4,27 @@ const notificationService = require("../notification/notification.service");
 const slugify = require("../../utils/slugify");
 const mongoose = require("mongoose");
 
-const getProducts = async (query) => listResources(Product, query, "categoryId");
+const deactivateExpiredFlashSales = () => {
+  const now = new Date();
+  return Product.updateMany(
+    {
+      isFlashSale: true,
+      flashSaleEndTime: { $ne: null, $lt: now },
+    },
+    {
+      $set: { isFlashSale: false, flashSaleDiscountPercent: 0 },
+      $unset: { flashSaleStartTime: "", flashSaleEndTime: "" },
+    }
+  );
+};
+
+const getProducts = async (query) => {
+  await deactivateExpiredFlashSales();
+  return listResources(Product, query, "categoryId");
+};
 
 const getProductById = async (id) => {
+  await deactivateExpiredFlashSales();
   const product = await Product.findById(id)
     .populate("createdBy", "name avatar createdAt")
     .populate("categoryId");
@@ -137,10 +155,20 @@ const toggleFlashSale = async (productId, user, enable, startTime, endTime, flas
   }
 
   if (enable) {
-    product.isFlashSale = true;
-    product.flashSaleStartTime = startTime;
-    product.flashSaleEndTime = endTime;
-    product.flashSaleDiscountPercent = Number(flashSaleDiscountPercent) || 0;
+    const now = new Date();
+    const parsedEndTime = endTime ? new Date(endTime) : null;
+
+    if (parsedEndTime && parsedEndTime < now) {
+      product.isFlashSale = false;
+      product.flashSaleStartTime = null;
+      product.flashSaleEndTime = null;
+      product.flashSaleDiscountPercent = 0;
+    } else {
+      product.isFlashSale = true;
+      product.flashSaleStartTime = startTime;
+      product.flashSaleEndTime = endTime;
+      product.flashSaleDiscountPercent = Number(flashSaleDiscountPercent) || 0;
+    }
   } else {
     product.isFlashSale = false;
     product.flashSaleStartTime = null;
@@ -192,4 +220,5 @@ module.exports = {
   toggleFlashSale,
   toggleLikeProduct,
   getLikedProducts,
+  deactivateExpiredFlashSales,
 };

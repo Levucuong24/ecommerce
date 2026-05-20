@@ -1,5 +1,25 @@
 const mongoose = require("mongoose");
 
+const getFlashSaleState = (product) => {
+  const now = new Date();
+  const startTime = product.flashSaleStartTime ? new Date(product.flashSaleStartTime) : null;
+  const endTime = product.flashSaleEndTime ? new Date(product.flashSaleEndTime) : null;
+
+  if (!product.isFlashSale) {
+    return { status: "inactive", isActive: false, shouldTurnOff: false };
+  }
+
+  if (endTime && endTime < now) {
+    return { status: "inactive", isActive: false, shouldTurnOff: true };
+  }
+
+  if (startTime && startTime > now) {
+    return { status: "scheduled", isActive: false, shouldTurnOff: false };
+  }
+
+  return { status: "active", isActive: true, shouldTurnOff: false };
+};
+
 const productSchema = new mongoose.Schema(
   {
     _id: mongoose.Schema.Types.ObjectId,
@@ -43,12 +63,15 @@ const productSchema = new mongoose.Schema(
     toObject: {
       virtuals: true,
       transform: (doc, ret) => {
-        const now = new Date();
-        const isActive = ret.isFlashSale && 
-          (!ret.flashSaleStartTime || new Date(ret.flashSaleStartTime) <= now) &&
-          (!ret.flashSaleEndTime || new Date(ret.flashSaleEndTime) >= now);
+        const flashSaleState = getFlashSaleState(ret);
+        ret.flashSaleStatus = flashSaleState.status;
+        ret.isFlashSaleActive = flashSaleState.isActive;
+
+        if (flashSaleState.shouldTurnOff) {
+          ret.isFlashSale = false;
+        }
         
-        if (isActive && ret.flashSaleDiscountPercent > 0) {
+        if (flashSaleState.isActive && ret.flashSaleDiscountPercent > 0) {
           ret.discountPrice = Math.round(ret.price * (1 - ret.flashSaleDiscountPercent / 100));
           if (ret.colors && ret.colors.length > 0) {
             ret.colors = ret.colors.map(c => ({
@@ -63,12 +86,15 @@ const productSchema = new mongoose.Schema(
     toJSON: {
       virtuals: true,
       transform: (doc, ret) => {
-        const now = new Date();
-        const isActive = ret.isFlashSale && 
-          (!ret.flashSaleStartTime || new Date(ret.flashSaleStartTime) <= now) &&
-          (!ret.flashSaleEndTime || new Date(ret.flashSaleEndTime) >= now);
+        const flashSaleState = getFlashSaleState(ret);
+        ret.flashSaleStatus = flashSaleState.status;
+        ret.isFlashSaleActive = flashSaleState.isActive;
+
+        if (flashSaleState.shouldTurnOff) {
+          ret.isFlashSale = false;
+        }
         
-        if (isActive && ret.flashSaleDiscountPercent > 0) {
+        if (flashSaleState.isActive && ret.flashSaleDiscountPercent > 0) {
           ret.discountPrice = Math.round(ret.price * (1 - ret.flashSaleDiscountPercent / 100));
           if (ret.colors && ret.colors.length > 0) {
             ret.colors = ret.colors.map(c => ({

@@ -5,6 +5,42 @@ import { getAuthToken } from "../../../utils/authStorage";
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
+const getFlashSaleStatus = (product) => {
+  const now = new Date();
+  const startTime = product.flashSaleStartTime ? new Date(product.flashSaleStartTime) : null;
+  const endTime = product.flashSaleEndTime ? new Date(product.flashSaleEndTime) : null;
+
+  if (!product.isFlashSale || (endTime && endTime < now)) {
+    return { label: "Tắt", background: "#f1f5f9", color: "#64748b" };
+  }
+
+  if (startTime && startTime > now) {
+    return { label: "Sắp diễn ra", background: "#fef3c7", color: "#d97706" };
+  }
+
+  return { label: "Đang bật", background: "#dcfce7", color: "#16a34a" };
+};
+
+const FlashSaleStatusBadge = ({ product }) => {
+  const status = getFlashSaleStatus(product);
+
+  return (
+    <span
+      style={{
+        background: status.background,
+        color: status.color,
+        padding: "4px 8px",
+        borderRadius: "4px",
+        fontSize: "12px",
+        display: "inline-block",
+        fontWeight: "500"
+      }}
+    >
+      {status.label}
+    </span>
+  );
+};
+
 function StoreDashboard({ store, token, onStoreUpdate }) {
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [activeTab, setActiveTab] = useState("products");
@@ -234,6 +270,7 @@ function StoreDashboard({ store, token, onStoreUpdate }) {
                                })() : formatPrice(p.discountPrice || p.price)}
                              </td>
                              <td style={{ padding: "12px" }}>
+                               <FlashSaleStatusBadge product={p} />
                                <span
                                  style={{
                                    background: p.isFlashSale ? "#dcfce7" : "#f1f5f9",
@@ -241,8 +278,8 @@ function StoreDashboard({ store, token, onStoreUpdate }) {
                                    padding: "4px 8px",
                                    borderRadius: "4px",
                                    fontSize: "12px",
-                                   display: "inline-block",
-                                   fontWeight: "500"
+                                   fontWeight: "500",
+                                   display: "none"
                                  }}
                                >
                                  {p.isFlashSale ? "Đang bật" : "Tắt"}

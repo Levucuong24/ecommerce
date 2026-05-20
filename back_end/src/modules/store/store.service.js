@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const { Store, Product, Review } = require("../../models");
 const slugify = require("../../utils/slugify");
+const { deactivateExpiredFlashSales } = require("../product/product.service");
 
 const createStore = async (userId, storeData) => {
   // Check if user already has a store
@@ -42,6 +43,7 @@ const getStoreById = async (storeId) => {
 };
 
 const getStoreProducts = async (storeId) => {
+  await deactivateExpiredFlashSales();
   return await Product.find({ storeId });
 };
 
