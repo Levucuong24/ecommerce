@@ -22,8 +22,22 @@ const toggleLikeProduct = asyncHandler(async (req, res) => {
 });
 
 const getLikedProducts = asyncHandler(async (req, res) => {
-    const data = await productService.getLikedProducts(req.user.id);
-    res.json(data);
+  const data = await productService.getLikedProducts(req.user.id);
+  res.json(data);
+});
+
+const toggleFlashSale = asyncHandler(async (req, res) => {
+  const { enable, startTime, endTime, flashSaleDiscountPercent } = req.body;
+  const productId = req.params.id;
+  const updatedProduct = await productService.toggleFlashSale(
+    productId,
+    req.user,
+    enable,
+    startTime,
+    endTime,
+    flashSaleDiscountPercent
+  );
+  res.json(updatedProduct);
 });
 
 module.exports = {
@@ -32,4 +46,5 @@ module.exports = {
   createProduct,
   toggleLikeProduct,
   getLikedProducts,
+  toggleFlashSale,
 };

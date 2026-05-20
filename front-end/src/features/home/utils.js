@@ -19,7 +19,7 @@ export const bannerImages = [
 export const formatPrice = (value) => Number(value || 0).toLocaleString("vi-VN");
 
 export const mockVouchers = [
-  { id: 'v1', code: 'DISC17', title: 'Giảm 17%', minOrder: 100000, discountPercent: 17, type: 'percent', exp: '30/06/2026' },
+  { id: 'v1', code: 'WELCOME17', title: 'Giảm 17%', minOrder: 0, discountPercent: 17, type: 'percent', exp: '30/06/2026' },
   { id: 'v2', code: 'DISC25K', title: 'Giảm 25K', minOrder: 200000, discountAmount: 25000, type: 'fixed', exp: '30/06/2026' },
   { id: 'v3', code: 'FREESHIP', title: 'Miễn Phí Vận Chuyển', minOrder: 50000, discountAmount: 15000, type: 'fixed', exp: '30/06/2026' },
   { id: 'v4', code: 'DISC50K', title: 'Giảm 50K', minOrder: 500000, discountAmount: 50000, type: 'fixed', exp: '30/06/2026' }

@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const { OAuth2Client } = require("google-auth-library");
 
-const { User } = require("../../models");
+const { User, Coupon } = require("../../models");
 const generateToken = require("../../utils/generateToken");
 const sendEmail = require("../../utils/sendEmail");
 
@@ -49,6 +49,19 @@ const registerUser = async ({ name, email, password, phone }) => {
     createdAt: new Date(),
   });
 
+  // Create welcome coupon for new user
+  await Coupon.create({
+    _id: new mongoose.Types.ObjectId(),
+    code: `WELCOME-${user._id.toString().slice(-6).toUpperCase()}`,
+    discountType: "percentage",
+    value: 17,
+    minOrder: 0,
+    maxUsage: 1,
+    expiredAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+    userId: user._id,
+    isActive: true,
+  });
+
   return {
     token: generateToken(user),
     user: sanitizeUser(user),
@@ -75,6 +88,22 @@ const loginUser = async ({ email, password }) => {
     const error = new Error("Email hoặc mật khẩu không chính xác");
     error.statusCode = 401;
     throw error;
+  }
+
+  // Ensure user has a welcome coupon (for existing users)
+  const welcomeCoupon = await Coupon.findOne({ userId: user._id, code: { $regex: /^WELCOME-/ } });
+  if (!welcomeCoupon) {
+    await Coupon.create({
+      _id: new mongoose.Types.ObjectId(),
+      code: `WELCOME-${user._id.toString().slice(-6).toUpperCase()}`,
+      discountType: "percentage",
+      value: 17,
+      minOrder: 0,
+      maxUsage: 1,
+      expiredAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+      userId: user._id,
+      isActive: true,
+    });
   }
 
   return {
@@ -202,6 +231,19 @@ const googleLogin = async (credential) => {
       role: "customer",
       isVerified: true,
       createdAt: new Date(),
+    });
+
+    // Create welcome coupon for new user
+    await Coupon.create({
+      _id: new mongoose.Types.ObjectId(),
+      code: `WELCOME-${user._id.toString().slice(-6).toUpperCase()}`,
+      discountType: "percentage",
+      value: 17,
+      minOrder: 0,
+      maxUsage: 1,
+      expiredAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+      userId: user._id,
+      isActive: true,
     });
   } else if (!user.googleId) {
     // Existing email account: link Google ID

@@ -18,6 +18,7 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
   const [loading, setLoading] = useState(true);
   const [savedVoucherIds, setSavedVoucherIds] = useState([]);
   const [selectedVoucherId, setSelectedVoucherId] = useState("");
+  const [apiCoupons, setApiCoupons] = useState([]);
 
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem("savedVouchers") || "[]");
@@ -49,6 +50,27 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
   useEffect(() => {
     fetchCart();
   }, [fetchCart]);
+
+  const fetchCoupons = useCallback(async () => {
+    try {
+      const url = user 
+        ? `${apiUrl}/coupons?userId=${user._id || user.id}`
+        : `${apiUrl}/coupons`;
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data.items)) {
+          setApiCoupons(data.items);
+        }
+      }
+    } catch (error) {
+      console.error("Lỗi khi tải coupon:", error);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchCoupons();
+  }, [fetchCoupons]);
 
   // Helper lấy thông tin giá của sản phẩm hoặc biến thể màu sắc tương ứng
   const getItemPriceInfo = (item) => {
@@ -136,16 +158,22 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
     }, 0);
   };
 
-  const selectedVoucher = mockVouchers.find(v => v.id === selectedVoucherId);
+  const selectedVoucher = 
+    mockVouchers.find(v => v.id === selectedVoucherId) ||
+    apiCoupons.find(v => v._id === selectedVoucherId);
 
   const calculateDiscount = (subtotal) => {
     if (!selectedVoucher) return 0;
-    if (subtotal < selectedVoucher.minOrder) return 0;
+    const minOrder = selectedVoucher.minOrder || 0;
+    if (subtotal < minOrder) return 0;
 
-    if (selectedVoucher.type === 'percent') {
-      return (subtotal * selectedVoucher.discountPercent) / 100;
-    } else if (selectedVoucher.type === 'fixed') {
-      return selectedVoucher.discountAmount;
+    const type = selectedVoucher.type || (selectedVoucher.discountType === 'percentage' ? 'percent' : 'fixed');
+    const value = selectedVoucher.value || selectedVoucher.discountPercent || selectedVoucher.discountAmount || 0;
+
+    if (type === 'percent') {
+      return (subtotal * value) / 100;
+    } else if (type === 'fixed') {
+      return value;
     }
     return 0;
   };
@@ -271,7 +299,7 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
             <div className="cart-summary-panel" style={{ background: "white", padding: "20px", borderRadius: "8px", height: "fit-content", position: "sticky", top: "174px" }}>
               <h3 style={{ marginTop: 0, marginBottom: "20px", fontSize: "18px" }}>Tổng Thanh Toán</h3>
               
-              {savedVoucherIds.length > 0 && (
+              {(savedVoucherIds.length > 0 || apiCoupons.length > 0) && (
                 <div style={{ marginBottom: "20px", paddingBottom: "20px", borderBottom: "1px dashed #eee" }}>
                   <label style={{ display: "block", marginBottom: "10px", fontWeight: "500", fontSize: "14px" }}>Chọn Voucher của bạn:</label>
                   <select 
@@ -280,6 +308,7 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
                     style={{ width: "100%", padding: "10px", borderRadius: "4px", border: "1px solid #ddd", background: "#f9f9f9", outline: "none" }}
                   >
                     <option value="">Không chọn</option>
+                    {/* Mock Vouchers */}
                     {savedVoucherIds.map(vid => {
                       const v = mockVouchers.find(mv => mv.id === vid);
                       if (!v) return null;
@@ -287,6 +316,16 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
                       return (
                         <option key={vid} value={vid} disabled={!isEligible}>
                           {v.title} {isEligible ? "" : `(Cần mua thêm ${formatPrice(v.minOrder - subtotal)}đ)`}
+                        </option>
+                      );
+                    })}
+                    {/* API Coupons (Auto-assigned like WELCOME) */}
+                    {apiCoupons.map(v => {
+                      const isEligible = subtotal >= (v.minOrder || 0);
+                      const displayTitle = v.code.startsWith('WELCOME-') ? `Voucher người mới (${v.code})` : v.code;
+                      return (
+                        <option key={v._id} value={v._id} disabled={!isEligible}>
+                          {displayTitle} (Giảm {v.value}{v.discountType === 'percentage' ? '%' : 'đ'}) {isEligible ? "" : `(Cần mua thêm ${formatPrice((v.minOrder || 0) - subtotal)}đ)`}
                         </option>
                       );
                     })}

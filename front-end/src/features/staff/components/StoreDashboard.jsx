@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import AddProductForm from "./AddProductForm";
-import { DATA_EVENTS, subscribeDataChanged } from "../../../utils/realtimeEvents";
+import { DATA_EVENTS, emitDataChanged, subscribeDataChanged } from "../../../utils/realtimeEvents";
+import { getAuthToken } from "../../../utils/authStorage";
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -10,6 +11,14 @@ function StoreDashboard({ store, token, onStoreUpdate }) {
   const [products, setProducts] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [loadingData, setLoadingData] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [showFlashSaleModal, setShowFlashSaleModal] = useState(false);
+  const [flashSaleData, setFlashSaleData] = useState({
+    enable: false,
+    startTime: "",
+    endTime: "",
+    flashSaleDiscountPercent: 0,
+  });
 
   const fetchDashboardData = async () => {
     setLoadingData(true);
@@ -51,6 +60,45 @@ function StoreDashboard({ store, token, onStoreUpdate }) {
   const formatPrice = (price) => {
     if (!price) return "0";
     return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+
+  const handleFlashSaleClick = (product) => {
+    setSelectedProduct(product);
+    setFlashSaleData({
+      enable: product.isFlashSale || false,
+      startTime: product.flashSaleStartTime?.substring(0, 16) || "",
+      endTime: product.flashSaleEndTime?.substring(0, 16) || "",
+      flashSaleDiscountPercent: product.flashSaleDiscountPercent || 0,
+    });
+    setShowFlashSaleModal(true);
+  };
+
+  const handleFlashSaleSave = async () => {
+    if (!selectedProduct) return;
+    try {
+      const response = await fetch(
+        `${apiUrl}/products/${selectedProduct._id}/flash-sale`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${getAuthToken()}`,
+          },
+          body: JSON.stringify(flashSaleData),
+        }
+      );
+      if (response.ok) {
+        alert("Cập nhật Flash Sale thành công!");
+        setShowFlashSaleModal(false);
+        fetchDashboardData();
+        emitDataChanged(DATA_EVENTS.PRODUCTS, { productId: selectedProduct._id });
+      } else {
+        alert("Không thể cập nhật Flash Sale");
+      }
+    } catch (error) {
+      console.error("Lỗi cập nhật Flash Sale:", error);
+      alert("Lỗi cập nhật Flash Sale");
+    }
   };
 
   return (
@@ -138,9 +186,10 @@ function StoreDashboard({ store, token, onStoreUpdate }) {
                           <th style={{ padding: "12px" }}>Tên sản phẩm</th>
                           <th style={{ padding: "12px" }}>Màu sắc</th>
                           <th style={{ padding: "12px" }}>Giá (VNĐ)</th>
+                          <th style={{ padding: "12px" }}>Flash Sale</th>
                           <th style={{ padding: "12px" }}>Kho</th>
                           <th style={{ padding: "12px" }}>Đã bán</th>
-                          <th style={{ padding: "12px" }}>Đánh giá</th>
+                          <th style={{ padding: "12px" }}>Hành động</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -174,22 +223,43 @@ function StoreDashboard({ store, token, onStoreUpdate }) {
                                 <span style={{ color: "var(--text-muted, #94a3b8)", fontSize: "12px" }}>—</span>
                               )}
                             </td>
-                            <td style={{ padding: "12px" }}>
-                              {p.colors && p.colors.length > 0 ? (() => {
-                                const prices = p.colors.map(c => c.discountPrice || c.price);
-                                const min = Math.min(...prices);
-                                const max = Math.max(...prices);
-                                return min === max
-                                  ? <span style={{ color: "var(--shopee-red)", fontWeight: "500" }}>{formatPrice(min)}</span>
-                                  : <span style={{ color: "var(--shopee-red)", fontWeight: "500" }}>{formatPrice(min)} – {formatPrice(max)}</span>;
-                              })() : formatPrice(p.discountPrice || p.price)}
-                            </td>
-                            <td style={{ padding: "12px" }}>{p.stock}</td>
-                            <td style={{ padding: "12px" }}>{p.soldCount || 0}</td>
-                            <td style={{ padding: "12px" }}>
-                              <span style={{ color: "var(--warning)" }}>★</span> {p.ratingAverage || 0} ({p.ratingCount || 0})
-                            </td>
-                          </tr>
+                             <td style={{ padding: "12px" }}>
+                               {p.colors && p.colors.length > 0 ? (() => {
+                                 const prices = p.colors.map(c => c.discountPrice || c.price);
+                                 const min = Math.min(...prices);
+                                 const max = Math.max(...prices);
+                                 return min === max
+                                   ? <span style={{ color: "var(--shopee-red)", fontWeight: "500" }}>{formatPrice(min)}</span>
+                                   : <span style={{ color: "var(--shopee-red)", fontWeight: "500" }}>{formatPrice(min)} – {formatPrice(max)}</span>;
+                               })() : formatPrice(p.discountPrice || p.price)}
+                             </td>
+                             <td style={{ padding: "12px" }}>
+                               <span
+                                 style={{
+                                   background: p.isFlashSale ? "#dcfce7" : "#f1f5f9",
+                                   color: p.isFlashSale ? "#16a34a" : "#64748b",
+                                   padding: "4px 8px",
+                                   borderRadius: "4px",
+                                   fontSize: "12px",
+                                   display: "inline-block",
+                                   fontWeight: "500"
+                                 }}
+                               >
+                                 {p.isFlashSale ? "Đang bật" : "Tắt"}
+                               </span>
+                             </td>
+                             <td style={{ padding: "12px" }}>{p.stock}</td>
+                             <td style={{ padding: "12px" }}>{p.soldCount || 0}</td>
+                             <td style={{ padding: "12px" }}>
+                               <button 
+                                 className="grant-btn" 
+                                 style={{ padding: "6px 12px", fontSize: "12px" }}
+                                 onClick={() => handleFlashSaleClick(p)}
+                               >
+                                 Flash Sale
+                               </button>
+                             </td>
+                           </tr>
                         ))}
                     </tbody>
                   </table>
@@ -227,6 +297,130 @@ function StoreDashboard({ store, token, onStoreUpdate }) {
                 </div>
               )
             )}
+          </div>
+        </div>
+      )}
+
+      {showFlashSaleModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+          onClick={() => setShowFlashSaleModal(false)}
+        >
+          <div
+            style={{
+              background: "white",
+              padding: "30px",
+              borderRadius: "12px",
+              maxWidth: "400px",
+              width: "90%",
+              boxShadow: "0 10px 25px rgba(0,0,0,0.1)"
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 style={{ marginBottom: "20px" }}>Quản lý Flash Sale</h3>
+            <p style={{ fontWeight: "500", marginBottom: "20px", color: "var(--shopee-red)" }}>{selectedProduct?.name}</p>
+            
+            <div style={{ marginTop: "20px" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={flashSaleData.enable}
+                  onChange={(e) =>
+                    setFlashSaleData({ ...flashSaleData, enable: e.target.checked })
+                  }
+                  style={{ width: "18px", height: "18px" }}
+                />
+                <span style={{ fontSize: "15px", fontWeight: "500" }}>Kích hoạt Flash Sale</span>
+              </label>
+              
+              {flashSaleData.enable && (
+                <div className="animate-fade">
+                  <div style={{ marginBottom: "15px" }}>
+                    <label style={{ display: "block", fontSize: "13px", color: "#64748b", marginBottom: "5px" }}>Phần trăm giảm giá (%):</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="99"
+                      value={flashSaleData.flashSaleDiscountPercent || ""}
+                      onChange={(e) =>
+                        setFlashSaleData({ ...flashSaleData, flashSaleDiscountPercent: Number(e.target.value) })
+                      }
+                      placeholder="Nhập % giảm giá (ví dụ: 10, 20...)"
+                      style={{
+                        width: "100%",
+                        padding: "10px",
+                        borderRadius: "8px",
+                        border: "1px solid #e2e8f0",
+                        fontSize: "14px"
+                      }}
+                      required
+                    />
+                  </div>
+                  <div style={{ marginBottom: "15px" }}>
+                    <label style={{ display: "block", fontSize: "13px", color: "#64748b", marginBottom: "5px" }}>Thời gian bắt đầu:</label>
+                    <input
+                      type="datetime-local"
+                      value={flashSaleData.startTime}
+                      onChange={(e) =>
+                        setFlashSaleData({ ...flashSaleData, startTime: e.target.value })
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "10px",
+                        borderRadius: "8px",
+                        border: "1px solid #e2e8f0",
+                        fontSize: "14px"
+                      }}
+                    />
+                  </div>
+                  <div style={{ marginBottom: "25px" }}>
+                    <label style={{ display: "block", fontSize: "13px", color: "#64748b", marginBottom: "5px" }}>Thời gian kết thúc:</label>
+                    <input
+                      type="datetime-local"
+                      value={flashSaleData.endTime}
+                      onChange={(e) =>
+                        setFlashSaleData({ ...flashSaleData, endTime: e.target.value })
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "10px",
+                        borderRadius: "8px",
+                        border: "1px solid #e2e8f0",
+                        fontSize: "14px"
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "10px" }}>
+                <button
+                  className="revoke-btn"
+                  onClick={() => setShowFlashSaleModal(false)}
+                  style={{ padding: "10px 20px" }}
+                >
+                  Hủy
+                </button>
+                <button
+                  className="grant-btn"
+                  onClick={handleFlashSaleSave}
+                  style={{ padding: "10px 25px" }}
+                >
+                  Lưu thay đổi
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

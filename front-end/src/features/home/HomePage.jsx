@@ -24,14 +24,16 @@ function HomePage({ onOpenLogin, onOpenCart, user, onLogout }) {
     if (showLoading) setLoading(true);
 
     try {
-      const [catRes, allProductRes, bannerRes] = await Promise.all([
+      const [catRes, allProductRes, flashProductRes, bannerRes] = await Promise.all([
         fetch(`${apiUrl}/categories?limit=100`),
         fetch(`${apiUrl}/products?limit=12&sortBy=-soldCount`),
+        fetch(`${apiUrl}/products?isFlashSale=true&limit=10`),
         fetch(`${apiUrl}/banners?active=true&sortBy=order`),
       ]);
 
       const catData = await catRes.json();
       const productData = await allProductRes.json();
+      const flashData = await flashProductRes.json();
 
       if (catRes.ok && Array.isArray(catData.items)) {
         setCategories(catData.items);
@@ -39,11 +41,19 @@ function HomePage({ onOpenLogin, onOpenCart, user, onLogout }) {
 
       if (allProductRes.ok && Array.isArray(productData.items)) {
         const allMapped = productData.items.map(mapProduct);
-        const saleItems = allMapped.filter(
-          (item) => item.discountPrice && item.discountPrice < item.originalPrice
-        );
-        setFlashSaleProducts(saleItems);
         setProducts(allMapped);
+      }
+
+      if (flashProductRes.ok && Array.isArray(flashData.items)) {
+        const flashMapped = flashData.items.map(mapProduct);
+        const now = new Date();
+        const saleItems = flashMapped.filter((item) => {
+          if (!item.isFlashSale) return false;
+          if (item.flashSaleStartTime && new Date(item.flashSaleStartTime) > now) return false;
+          if (item.flashSaleEndTime && new Date(item.flashSaleEndTime) < now) return false;
+          return item.discountPrice && item.discountPrice < item.originalPrice;
+        });
+        setFlashSaleProducts(saleItems);
       }
 
       if (bannerRes.ok) {
@@ -106,6 +116,9 @@ function HomePage({ onOpenLogin, onOpenCart, user, onLogout }) {
       categoryName: item.categoryId?.name || "Khác",
       isLiked: item.likes?.includes(userId),
       onLike: handleLike,
+      isFlashSale: item.isFlashSale,
+      flashSaleStartTime: item.flashSaleStartTime,
+      flashSaleEndTime: item.flashSaleEndTime,
     };
   }, [user, handleLike]);
 

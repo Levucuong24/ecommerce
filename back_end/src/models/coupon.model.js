@@ -6,8 +6,10 @@ const couponSchema = new mongoose.Schema(
     code: { type: String, required: true, unique: true },
     discountType: String,
     value: Number,
+    minOrder: { type: Number, default: 0 },
     maxUsage: Number,
     expiredAt: Date,
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
     isActive: { type: Boolean, default: true },
   },
   { versionKey: false }

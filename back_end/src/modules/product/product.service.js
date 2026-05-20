@@ -117,6 +117,41 @@ const createProduct = async (userId, productData) => {
   return product;
 };
 
+const toggleFlashSale = async (productId, user, enable, startTime, endTime, flashSaleDiscountPercent) => {
+  const product = await Product.findById(productId);
+
+  if (!product) {
+    const error = new Error("Product not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // Check ownership if user is staff
+  if (user.role === "staff") {
+    const store = await Store.findOne({ ownerId: user.id });
+    if (!store || (product.storeId && product.storeId.toString() !== store._id.toString())) {
+      const error = new Error("Bạn không có quyền quản lý Flash Sale cho sản phẩm này");
+      error.statusCode = 403;
+      throw error;
+    }
+  }
+
+  if (enable) {
+    product.isFlashSale = true;
+    product.flashSaleStartTime = startTime;
+    product.flashSaleEndTime = endTime;
+    product.flashSaleDiscountPercent = Number(flashSaleDiscountPercent) || 0;
+  } else {
+    product.isFlashSale = false;
+    product.flashSaleStartTime = null;
+    product.flashSaleEndTime = null;
+    product.flashSaleDiscountPercent = 0;
+  }
+
+  const updatedProduct = await product.save();
+  return updatedProduct;
+};
+
 const toggleLikeProduct = async (productId, userId) => {
   const product = await Product.findById(productId);
   if (!product) {
@@ -154,6 +189,7 @@ module.exports = {
   getProducts,
   getProductById,
   createProduct,
+  toggleFlashSale,
   toggleLikeProduct,
   getLikedProducts,
 };

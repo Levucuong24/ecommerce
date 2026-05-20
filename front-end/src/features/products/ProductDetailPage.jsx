@@ -288,6 +288,10 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
     );
   }
 
+  const isFlashSaleActive = product.isFlashSale && 
+    (!product.flashSaleStartTime || new Date(product.flashSaleStartTime) <= new Date()) &&
+    (!product.flashSaleEndTime || new Date(product.flashSaleEndTime) >= new Date());
+
   const formatCount = (count) => {
     if (count >= 1000) {
       return (count / 1000).toFixed(1) + "k";
@@ -507,7 +511,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
               <div className="price-display">
                 {selectedColor ? (
                   // 1. Khi ĐÃ CHỌN màu
-                  selectedColor.discountPrice ? (
+                  (isFlashSaleActive && selectedColor.discountPrice) ? (
                     <>
                       <span className="original-price">{formatPrice(selectedColor.price)}₫</span>
                       <span className="current-price">{formatPrice(selectedColor.discountPrice)}₫</span>
@@ -519,7 +523,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
                 ) : (
                   // 2. Khi CHƯA CHỌN màu
                   product.colors && product.colors.length > 0 ? (() => {
-                    const sellingPrices = product.colors.map(c => c.discountPrice || c.price);
+                    const sellingPrices = product.colors.map(c => (isFlashSaleActive && c.discountPrice) || c.price);
                     const minSelling = Math.min(...sellingPrices);
                     const maxSelling = Math.max(...sellingPrices);
                     
@@ -531,7 +535,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
                       );
                     } else {
                       // Tất cả các màu cùng giá bán
-                      const colorWithDiscount = product.colors.find(c => c.discountPrice);
+                      const colorWithDiscount = isFlashSaleActive ? product.colors.find(c => c.discountPrice) : null;
                       if (colorWithDiscount) {
                         return (
                           <>
@@ -545,7 +549,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
                     }
                   })() : (
                     // Fallback khi sản phẩm không có biến thể màu sắc
-                    product.discountPrice ? (
+                    (isFlashSaleActive && product.discountPrice) ? (
                       <>
                         <span className="original-price">{formatPrice(product.price)}₫</span>
                         <span className="current-price">{formatPrice(product.discountPrice)}₫</span>
@@ -557,6 +561,13 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
                   )
                 )}
               </div>
+              {product.isFlashSale && !isFlashSaleActive && (
+                <div style={{ marginTop: '10px', fontSize: '13px', color: '#666' }}>
+                  {new Date(product.flashSaleStartTime) > new Date() 
+                    ? `Sắp diễn ra Flash Sale vào ${new Date(product.flashSaleStartTime).toLocaleString()}`
+                    : `Flash Sale đã kết thúc`}
+                </div>
+              )}
             </div>
 
             <div className="product-promotions">
