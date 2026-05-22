@@ -16,6 +16,7 @@ import LikedProductsPage from "./features/shop/LikedProductsPage";
 import VoucherPage from "./features/home/VoucherPage";
 import { clearAuthSession, getAuthUser, saveAuthSession, getAuthToken } from "./utils/authStorage";
 import { DATA_EVENTS, emitDataChanged } from "./utils/realtimeEvents";
+import ChatWidget from "./components/ChatWidget";
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const allowedRoles = new Set(["admin", "staff", "customer"]);
@@ -43,6 +44,7 @@ function App() {
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeChatStore, setActiveChatStore] = useState(null);
 
   const clearMessage = () => {
     setMessage("");
@@ -276,159 +278,164 @@ function App() {
   };
 
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/home" replace />} />
-      <Route
-        path="/home"
-        element={
-          <HomePage
-            user={user}
-            onLogout={handleLogout}
-            onOpenLogin={() => openAuthPage("login")}
-            onOpenCart={openCartPage}
-          />
-        }
-      />
-
-      <Route 
-        path="/cart" 
-        element={
-          <CartPage 
-            user={user} 
-            onLogout={handleLogout}
-            onOpenLogin={() => openAuthPage("login")}
-            onBackHome={goHomePage} 
-          />
-        } 
-      />
-      <Route
-        path="/product/:id"
-        element={
-          <ProductDetailPage
-            user={user}
-            onLogout={handleLogout}
-            onOpenLogin={() => openAuthPage("login")}
-            onOpenCart={openCartPage}
-          />
-        }
-      />
-      <Route
-        path="/shop/:id"
-        element={
-          <ShopPage
-            user={user}
-            onLogout={handleLogout}
-            onOpenLogin={() => openAuthPage("login")}
-            onOpenCart={openCartPage}
-          />
-        }
-      />
-      <Route
-        path="/liked-products"
-        element={
-          <LikedProductsPage
-            user={user}
-            onLogout={handleLogout}
-            onOpenLogin={() => openAuthPage("login")}
-            onOpenCart={openCartPage}
-          />
-        }
-      />
-      <Route
-        path="/following-shops"
-        element={
-          <FollowingShopsPage
-            user={user}
-            onLogout={handleLogout}
-            onOpenLogin={() => openAuthPage("login")}
-            onOpenCart={openCartPage}
-          />
-        }
-      />
-      <Route
-        path="/vouchers"
-        element={
-          <VoucherPage
-            user={user}
-            onLogout={handleLogout}
-            onOpenLogin={() => openAuthPage("login")}
-            onOpenCart={openCartPage}
-          />
-        }
-      />
-      <Route
-        path="/auth"
-        element={
-          <AuthShell mode={mode} onSwitchMode={switchMode} onBackHome={goHomePage}>
-            {mode === "login" ? (
-              <LoginForm
-                formData={loginData}
-                isSubmitting={isSubmitting}
-                message={message}
-                messageType={messageType}
-                onChange={handleLoginChange}
-                onSubmit={handleLoginSubmit}
-                onSwitchToRegister={() => switchMode("register")}
-                onSwitchToForgotPassword={() => switchMode("forgotPassword")}
-                onGoogleLogin={handleGoogleLogin}
-              />
-            ) : mode === "forgotPassword" ? (
-              <ForgotPasswordForm onSwitchToLogin={() => switchMode("login")} />
-            ) : (
-              <RegisterForm
-                formData={registerData}
-                isSubmitting={isSubmitting}
-                message={message}
-                messageType={messageType}
-                onChange={handleRegisterChange}
-                onSubmit={handleRegisterSubmit}
-                onSwitchToLogin={() => switchMode("login")}
-              />
-            )}
-          </AuthShell>
-        }
-      />
-      <Route
-        path="/admin"
-        element={
-          user?.role === "admin" ? (
-            <AdminPage
+    <>
+      <Routes>
+        <Route path="/" element={<Navigate to="/home" replace />} />
+        <Route
+          path="/home"
+          element={
+            <HomePage
               user={user}
+              onLogout={handleLogout}
               onOpenLogin={() => openAuthPage("login")}
               onOpenCart={openCartPage}
-              handleLogout={handleLogout}
             />
-          ) : (
-            <Navigate to={user ? getDefaultRouteByRole(user.role) : "/auth"} replace />
-          )
-        }
-      />
-      <Route
-        path="/staff"
-        element={
-          user?.role === "staff" ? (
-            <StaffPage user={user} handleLogout={handleLogout} />
-          ) : (
-            <Navigate to={user ? getDefaultRouteByRole(user.role) : "/auth"} replace />
-          )
-        }
-      />
-      <Route
-        path="/:categorySlug"
-        element={
-          <CategoryPage
-            user={user}
-            onLogout={handleLogout}
-            onOpenLogin={() => openAuthPage("login")}
-            onOpenCart={openCartPage}
-          />
-        }
-      />
-      <Route
-        path="*"
-        element={<NotFound onBackHome={goHomePage} />}
-      />
-    </Routes>
+          }
+        />
+
+        <Route 
+          path="/cart" 
+          element={
+            <CartPage 
+              user={user} 
+              onLogout={handleLogout}
+              onOpenLogin={() => openAuthPage("login")}
+              onBackHome={goHomePage} 
+            />
+          } 
+        />
+        <Route
+          path="/product/:id"
+          element={
+            <ProductDetailPage
+              user={user}
+              onLogout={handleLogout}
+              onOpenLogin={() => openAuthPage("login")}
+              onOpenCart={openCartPage}
+              onChatWithStore={(store) => setActiveChatStore(store)}
+            />
+          }
+        />
+        <Route
+          path="/shop/:id"
+          element={
+            <ShopPage
+              user={user}
+              onLogout={handleLogout}
+              onOpenLogin={() => openAuthPage("login")}
+              onOpenCart={openCartPage}
+              onChatWithStore={(store) => setActiveChatStore(store)}
+            />
+          }
+        />
+        <Route
+          path="/liked-products"
+          element={
+            <LikedProductsPage
+              user={user}
+              onLogout={handleLogout}
+              onOpenLogin={() => openAuthPage("login")}
+              onOpenCart={openCartPage}
+            />
+          }
+        />
+        <Route
+          path="/following-shops"
+          element={
+            <FollowingShopsPage
+              user={user}
+              onLogout={handleLogout}
+              onOpenLogin={() => openAuthPage("login")}
+              onOpenCart={openCartPage}
+            />
+          }
+        />
+        <Route
+          path="/vouchers"
+          element={
+            <VoucherPage
+              user={user}
+              onLogout={handleLogout}
+              onOpenLogin={() => openAuthPage("login")}
+              onOpenCart={openCartPage}
+            />
+          }
+        />
+        <Route
+          path="/auth"
+          element={
+            <AuthShell mode={mode} onSwitchMode={switchMode} onBackHome={goHomePage}>
+              {mode === "login" ? (
+                <LoginForm
+                  formData={loginData}
+                  isSubmitting={isSubmitting}
+                  message={message}
+                  messageType={messageType}
+                  onChange={handleLoginChange}
+                  onSubmit={handleLoginSubmit}
+                  onSwitchToRegister={() => switchMode("register")}
+                  onSwitchToForgotPassword={() => switchMode("forgotPassword")}
+                  onGoogleLogin={handleGoogleLogin}
+                />
+              ) : mode === "forgotPassword" ? (
+                <ForgotPasswordForm onSwitchToLogin={() => switchMode("login")} />
+              ) : (
+                <RegisterForm
+                  formData={registerData}
+                  isSubmitting={isSubmitting}
+                  message={message}
+                  messageType={messageType}
+                  onChange={handleRegisterChange}
+                  onSubmit={handleRegisterSubmit}
+                  onSwitchToLogin={() => switchMode("login")}
+                />
+              )}
+            </AuthShell>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            user?.role === "admin" ? (
+              <AdminPage
+                user={user}
+                onOpenLogin={() => openAuthPage("login")}
+                onOpenCart={openCartPage}
+                handleLogout={handleLogout}
+              />
+            ) : (
+              <Navigate to={user ? getDefaultRouteByRole(user.role) : "/auth"} replace />
+            )
+          }
+        />
+        <Route
+          path="/staff"
+          element={
+            user?.role === "staff" ? (
+              <StaffPage user={user} handleLogout={handleLogout} />
+            ) : (
+              <Navigate to={user ? getDefaultRouteByRole(user.role) : "/auth"} replace />
+            )
+          }
+        />
+        <Route
+          path="/:categorySlug"
+          element={
+            <CategoryPage
+              user={user}
+              onLogout={handleLogout}
+              onOpenLogin={() => openAuthPage("login")}
+              onOpenCart={openCartPage}
+            />
+          }
+        />
+        <Route
+          path="*"
+          element={<NotFound onBackHome={goHomePage} />}
+        />
+      </Routes>
+      <ChatWidget activeStore={activeChatStore} onClose={() => setActiveChatStore(null)} currentUser={user} />
+    </>
   );
 }
 

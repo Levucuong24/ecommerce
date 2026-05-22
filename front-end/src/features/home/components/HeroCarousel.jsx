@@ -1,8 +1,17 @@
+import React, { useEffect } from "react";
 import { quickLinks } from "../utils";
 import "./HeroCarousel.css";
 
 function HeroCarousel({ currentSlide, setCurrentSlide, onVoucherClick, banners }) {
   const displayBanners = banners && banners.length > 0 ? banners : [];
+
+  useEffect(() => {
+    if (displayBanners.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % displayBanners.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [currentSlide, displayBanners.length, setCurrentSlide]);
 
   return (
     <section className="hero-banner">

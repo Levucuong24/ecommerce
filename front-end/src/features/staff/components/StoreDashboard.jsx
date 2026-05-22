@@ -56,6 +56,99 @@ function StoreDashboard({ store, token, onStoreUpdate }) {
     flashSaleDiscountPercent: 0,
   });
 
+  const [conversations, setConversations] = useState([]);
+  const [selectedConv, setSelectedConv] = useState(null);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState("");
+  const [loadingChats, setLoadingChats] = useState(false);
+
+  const fetchConversations = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/chats/conversations`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setConversations(data);
+      }
+    } catch (error) {
+      console.error("Lỗi tải cuộc hội thoại:", error);
+    }
+  };
+
+  const fetchChatMessages = async (conv, showLoading = false) => {
+    if (!conv) return;
+    if (showLoading) setLoadingChats(true);
+    try {
+      const response = await fetch(`${apiUrl}/chats/${conv.storeId}?customerId=${conv.customerId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setChatMessages(data);
+      }
+    } catch (error) {
+      console.error("Lỗi tải tin nhắn cuộc trò chuyện:", error);
+    } finally {
+      if (showLoading) setLoadingChats(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "messages") {
+      fetchConversations();
+      const interval = setInterval(() => {
+        fetchConversations();
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === "messages" && selectedConv) {
+      fetchChatMessages(selectedConv, true);
+      const interval = setInterval(() => {
+        fetchChatMessages(selectedConv, false);
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [activeTab, selectedConv]);
+
+  const handleSendChatMessage = async (e) => {
+    e.preventDefault();
+    if (!chatInput.trim() || !selectedConv) return;
+
+    const content = chatInput;
+    setChatInput("");
+
+    try {
+      const response = await fetch(`${apiUrl}/chats`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          storeId: selectedConv.storeId,
+          content,
+          receiverId: selectedConv.customerId,
+          senderRole: "staff",
+        }),
+      });
+
+      if (response.ok) {
+        fetchChatMessages(selectedConv, false);
+        fetchConversations();
+      }
+    } catch (error) {
+      console.error("Lỗi gửi tin nhắn phản hồi:", error);
+    }
+  };
+
   const fetchDashboardData = async () => {
     setLoadingData(true);
     try {
@@ -201,6 +294,15 @@ function StoreDashboard({ store, token, onStoreUpdate }) {
             >
               Đánh giá của khách hàng ({reviews.length})
             </button>
+            <button
+              style={{
+                flex: 1, padding: "15px", background: "none", border: "none", borderBottom: activeTab === "messages" ? "3px solid var(--primary)" : "3px solid transparent",
+                fontWeight: activeTab === "messages" ? "bold" : "normal", color: activeTab === "messages" ? "var(--primary)" : "var(--text-secondary)", cursor: "pointer", fontSize: "16px"
+              }}
+              onClick={() => setActiveTab("messages")}
+            >
+              Tin nhắn
+            </button>
           </div>
 
           <div style={{ padding: "24px" }}>
@@ -302,7 +404,7 @@ function StoreDashboard({ store, token, onStoreUpdate }) {
                   </table>
                 </div>
               )
-            ) : (
+            ) : activeTab === "reviews" ? (
               reviews.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "40px 0" }}>
                   <p style={{ color: "var(--text-secondary)" }}>Chưa có đánh giá nào từ khách hàng.</p>
@@ -333,6 +435,187 @@ function StoreDashboard({ store, token, onStoreUpdate }) {
                   </table>
                 </div>
               )
+            ) : (
+              <div style={{ display: "flex", height: "500px", border: "1px solid var(--border-color)", borderRadius: "8px", overflow: "hidden" }}>
+                {/* Conversation List */}
+                <div style={{ width: "280px", borderRight: "1px solid var(--border-color)", background: "#f8fafc", display: "flex", flexDirection: "column", overflowY: "auto" }}>
+                  <div style={{ padding: "16px", fontWeight: "bold", borderBottom: "1px solid var(--border-color)", background: "white" }}>
+                    Hội thoại gần đây
+                  </div>
+                  {conversations.length === 0 ? (
+                    <div style={{ padding: "20px", textAlign: "center", color: "#64748b", fontSize: "14px" }}>
+                      Chưa có tin nhắn nào từ khách hàng.
+                    </div>
+                  ) : (
+                    conversations.map((conv) => {
+                      const isActive = selectedConv?.customerId === conv.customerId;
+                      return (
+                        <div
+                          key={`${conv.storeId}_${conv.customerId}`}
+                          onClick={() => setSelectedConv(conv)}
+                          style={{
+                            padding: "12px 16px",
+                            borderBottom: "1px solid #f1f5f9",
+                            cursor: "pointer",
+                            background: isActive ? "#fff5f5" : "transparent",
+                            transition: "background 0.2s",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "10px",
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isActive) e.currentTarget.style.background = "#f1f5f9";
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isActive) e.currentTarget.style.background = "transparent";
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: "36px",
+                              height: "36px",
+                              borderRadius: "50%",
+                              background: "var(--primary-light)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontWeight: "bold",
+                              fontSize: "15px",
+                              color: "var(--shopee-red)",
+                              overflow: "hidden",
+                              flexShrink: 0,
+                            }}
+                          >
+                            {conv.customerAvatar ? (
+                              <img src={conv.customerAvatar} alt={conv.customerName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            ) : (
+                              <span>{conv.customerName[0]?.toUpperCase()}</span>
+                            )}
+                          </div>
+                          <div style={{ overflow: "hidden", flex: 1 }}>
+                            <div style={{ fontWeight: "600", fontSize: "14px", color: "#1e293b", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
+                              {conv.customerName}
+                            </div>
+                            <div style={{ fontSize: "12px", color: "#64748b", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", marginTop: "2px" }}>
+                              {conv.lastMessage}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Chat Panel */}
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "white" }}>
+                  {selectedConv ? (
+                    <>
+                      {/* Chat Header */}
+                      <div style={{ padding: "16px", borderBottom: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: "10px" }}>
+                        <div
+                          style={{
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "50%",
+                            background: "var(--primary-light)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontWeight: "bold",
+                            color: "var(--shopee-red)",
+                            overflow: "hidden"
+                          }}
+                        >
+                          {selectedConv.customerAvatar ? (
+                            <img src={selectedConv.customerAvatar} alt={selectedConv.customerName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          ) : (
+                            <span>{selectedConv.customerName[0]?.toUpperCase()}</span>
+                          )}
+                        </div>
+                        <span style={{ fontWeight: "600", color: "#1e293b" }}>{selectedConv.customerName}</span>
+                      </div>
+
+                      {/* Messages Thread */}
+                      <div style={{ flex: 1, padding: "20px", overflowY: "auto", background: "#f8fafc", display: "flex", flexDirection: "column", gap: "12px" }}>
+                        {loadingChats && chatMessages.length === 0 ? (
+                          <div style={{ textAlign: "center", color: "#64748b", marginTop: "40px" }}>Đang tải tin nhắn...</div>
+                        ) : (
+                          chatMessages.map((msg, index) => {
+                            const isMe = msg.senderRole === "staff";
+                            return (
+                              <div
+                                key={msg._id || index}
+                                style={{
+                                  display: "flex",
+                                  justifyContent: isMe ? "flex-end" : "flex-start",
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    maxWidth: "70%",
+                                    padding: "10px 14px",
+                                    borderRadius: isMe ? "12px 12px 0 12px" : "12px 12px 12px 0",
+                                    background: isMe ? "var(--shopee-red, #ee4d2d)" : "white",
+                                    color: isMe ? "white" : "#1e293b",
+                                    boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                                    fontSize: "14px",
+                                    lineHeight: "1.4",
+                                    wordBreak: "break-word",
+                                  }}
+                                >
+                                  {msg.content}
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+
+                      {/* Reply Form */}
+                      <form
+                        onSubmit={handleSendChatMessage}
+                        style={{ padding: "16px", borderTop: "1px solid var(--border-color)", display: "flex", gap: "10px" }}
+                      >
+                        <input
+                          type="text"
+                          value={chatInput}
+                          onChange={(e) => setChatInput(e.target.value)}
+                          placeholder={`Trả lời ${selectedConv.customerName}...`}
+                          style={{
+                            flex: 1,
+                            padding: "10px 14px",
+                            border: "1px solid #cbd5e1",
+                            borderRadius: "6px",
+                            fontSize: "14px",
+                            outline: "none",
+                          }}
+                        />
+                        <button
+                          type="submit"
+                          style={{
+                            background: "var(--shopee-red, #ee4d2d)",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "6px",
+                            padding: "10px 20px",
+                            fontWeight: "600",
+                            fontSize: "14px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          Trả lời
+                        </button>
+                      </form>
+                    </>
+                  ) : (
+                    <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#64748b", padding: "40px", textAlign: "center" }}>
+                      <span style={{ fontSize: "48px", marginBottom: "16px" }}>💬</span>
+                      <p style={{ fontWeight: "500", fontSize: "16px" }}>Hộp thư của cửa hàng</p>
+                      <p style={{ fontSize: "14px", color: "#94a3b8", marginTop: "4px" }}>Chọn khách hàng từ cột bên trái để xem tin nhắn và trả lời.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
           </div>
         </div>

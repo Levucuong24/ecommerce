@@ -22,7 +22,7 @@ const mapProduct = (item) => ({
   image: imageMap[item.images?.[0]] || item.images?.[0] || null,
 });
 
-function ShopPage({ onOpenLogin, onOpenCart, user, onLogout }) {
+function ShopPage({ onOpenLogin, onOpenCart, user, onLogout, onChatWithStore }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [shop, setShop] = useState(null);
@@ -196,7 +196,25 @@ function ShopPage({ onOpenLogin, onOpenCart, user, onLogout }) {
                   </svg>
                   {isFollowing ? "Đang Theo Dõi" : "Theo Dõi"}
                 </button>
-                <button className="shop-chat-btn primary-btn" style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                <button 
+                  className="shop-chat-btn primary-btn" 
+                  style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}
+                  onClick={() => {
+                    if (!user) {
+                      alert("Vui lòng đăng nhập để chat với shop.");
+                      onOpenLogin();
+                      return;
+                    }
+                    if (shop) {
+                      onChatWithStore({
+                        id: shop._id || shop.id,
+                        ownerId: shop.ownerId,
+                        name: shop.name,
+                        logo: shop.logo
+                      });
+                    }
+                  }}
+                >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                   </svg>

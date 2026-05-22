@@ -89,6 +89,16 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
     };
   };
 
+  const getItemStock = (item) => {
+    if (item.color && item.productId?.colors) {
+      const colorObj = item.productId.colors.find(c => c.name === item.color);
+      if (colorObj) {
+        return colorObj.stock;
+      }
+    }
+    return item.productId?.stock || 0;
+  };
+
   const updateQuantity = async (productId, newQuantity, color) => {
     if (newQuantity < 1) return;
     try {
@@ -274,8 +284,43 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
                     <div style={{ display: "flex", justifyContent: "center" }}>
                       <div className="quantity-selector" style={{ scale: "0.8" }}>
                         <button className="qty-btn" onClick={() => updateQuantity(item.productId._id, item.quantity - 1, item.color)}>-</button>
-                        <input type="text" value={item.quantity} readOnly className="qty-input" />
-                        <button className="qty-btn" onClick={() => updateQuantity(item.productId._id, item.quantity + 1, item.color)}>+</button>
+                        <input 
+                          type="text" 
+                          defaultValue={item.quantity} 
+                          key={item.quantity}
+                          className="qty-input" 
+                          onBlur={(e) => {
+                            const val = parseInt(e.target.value, 10);
+                            const stock = getItemStock(item);
+                            if (isNaN(val) || val < 1) {
+                              e.target.value = item.quantity;
+                            } else if (val > stock) {
+                              alert("Số lượng bạn chọn đã đạt mức tối đa của sản phẩm này");
+                              e.target.value = stock;
+                              updateQuantity(item.productId._id, stock, item.color);
+                            } else if (val !== item.quantity) {
+                              updateQuantity(item.productId._id, val, item.color);
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.target.blur();
+                            }
+                          }}
+                        />
+                        <button 
+                          className="qty-btn" 
+                          onClick={() => {
+                            const stock = getItemStock(item);
+                            if (item.quantity >= stock) {
+                              alert("Số lượng bạn chọn đã đạt mức tối đa của sản phẩm này");
+                            } else {
+                              updateQuantity(item.productId._id, item.quantity + 1, item.color);
+                            }
+                          }}
+                        >
+                          +
+                        </button>
                       </div>
                     </div>
                     

@@ -9,6 +9,7 @@ const reviewRoutes = require("../modules/review/review.routes");
 const storeRoutes = require("../modules/store/store.routes");
 const notificationRoutes = require("../modules/notification/notification.routes");
 const resourceRoutes = require("../modules/resource/resource.routes");
+const chatRoutes = require("../modules/chat/chat.routes");
 
 const router = express.Router();
 
@@ -24,6 +25,7 @@ router.use("/orders", orderRoutes);
 router.use("/reviews", reviewRoutes);
 router.use("/stores", storeRoutes);
 router.use("/notifications", notificationRoutes);
+router.use("/chats", chatRoutes);
 router.use("/", resourceRoutes);
 
 module.exports = router;

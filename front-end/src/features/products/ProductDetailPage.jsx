@@ -4,11 +4,10 @@ import Header from "../home/components/Header";
 import { getAuthToken } from "../../utils/authStorage";
 import { imageMap, formatPrice } from "../home/utils";
 import { DATA_EVENTS, subscribeDataChanged } from "../../utils/realtimeEvents";
-import VoucherModal from "../../components/VoucherModal";
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
+function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout, onChatWithStore }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
@@ -26,7 +25,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
   const [isFollowingStore, setIsFollowingStore] = useState(false);
   const [isSubmittingFollow, setIsSubmittingFollow] = useState(false);
   const [shopOnlineStatus, setShopOnlineStatus] = useState("");
-  const [showVouchers, setShowVouchers] = useState(false);
+  const [quantityError, setQuantityError] = useState("");
 
   const fetchReviews = async () => {
     try {
@@ -261,14 +260,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
     navigate(`/home`);
   };
 
-  const handleVoucherClick = () => {
-    if (!user) {
-      alert("Vui lòng đăng nhập để xem và lưu mã giảm giá.");
-      onOpenLogin();
-      return;
-    }
-    setShowVouchers(true);
-  };
+
 
   if (loading) {
     return (
@@ -362,9 +354,12 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
 
   // Khi đổi màu, tự động chuyển ảnh chính đến ảnh đầu tiên của màu sắc đó
   const handleSelectColor = (color) => {
+    setQuantityError("");
     let targetImage = null;
+    let nextStock = product.stock;
 
     if (color === "original") {
+      nextStock = product.stock;
       setSelectedColor({
         name: "Sản phẩm gốc",
         price: product.price,
@@ -376,6 +371,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
         targetImage = product.images[0];
       }
     } else if (color === null) {
+      nextStock = product.stock;
       setSelectedColor(null);
       if (product?.images && product.images.length > 0) {
         targetImage = product.images[0];
@@ -383,16 +379,22 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
     } else {
       const isAlreadySelected = selectedColor?.name === color.name && !selectedColor?.isOriginal;
       if (isAlreadySelected) {
+        nextStock = product.stock;
         setSelectedColor(null);
         if (product?.images && product.images.length > 0) {
           targetImage = product.images[0];
         }
       } else {
+        nextStock = color.stock;
         setSelectedColor(color);
         if (color.images && color.images.length > 0) {
           targetImage = color.images[0];
         }
       }
+    }
+
+    if (quantity > nextStock) {
+      setQuantity(Math.max(1, nextStock));
     }
 
     if (targetImage) {
@@ -415,6 +417,52 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
   const displayDiscountPrice = selectedColor?.discountPrice ?? product?.discountPrice;
   // Kho hiển thị: theo màu nếu có, fallback về kho sản phẩm
   const displayStock = selectedColor?.stock ?? product?.stock;
+
+  const handleIncreaseQuantity = () => {
+    const currentQty = parseInt(quantity, 10) || 0;
+    if (currentQty >= displayStock) {
+      setQuantityError("Số lượng bạn chọn đã đạt mức tối đa của sản phẩm này");
+    } else {
+      setQuantity(currentQty + 1);
+      setQuantityError("");
+    }
+  };
+
+  const handleDecreaseQuantity = () => {
+    const currentQty = parseInt(quantity, 10) || 1;
+    setQuantity(Math.max(1, currentQty - 1));
+    setQuantityError("");
+  };
+
+  const handleQuantityChange = (e) => {
+    const val = e.target.value;
+    if (val === "") {
+      setQuantity("");
+      setQuantityError("");
+      return;
+    }
+
+    const num = parseInt(val, 10);
+    if (isNaN(num) || num < 1) {
+      setQuantity(1);
+      setQuantityError("");
+      return;
+    }
+
+    if (num > displayStock) {
+      setQuantity(displayStock);
+      setQuantityError("Số lượng bạn chọn đã đạt mức tối đa của sản phẩm này");
+    } else {
+      setQuantity(num);
+      setQuantityError("");
+    }
+  };
+
+  const handleQuantityBlur = () => {
+    if (quantity === "" || isNaN(quantity) || quantity < 1) {
+      setQuantity(1);
+    }
+  };
 
   const currentImageUrl = getImageUrl(activeImages[currentImageIdx] ?? activeImages[0]);
   const variantImageUrl = getImageUrl(activeImages[0]);
@@ -571,23 +619,13 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
             </div>
 
             <div className="product-promotions">
-              <div className="promo-row">
-                <span className="promo-label">Mã Giảm Giá Của Shop</span>
-                <div className="promo-tags">
-                  <span className="shop-voucher" onClick={handleVoucherClick} style={{ cursor: 'pointer' }}>Giảm 17%</span>
-                </div>
-              </div>
 
               <div className="promo-row">
                 <span className="promo-label">Vận Chuyển</span>
                 <div className="shipping-info">
                   <div className="shipping-line">
                     <span className="ship-icon">🚚</span>
-                    <span>Vận Chuyển Tới: <strong>Quận Hoàn Kiếm, Hà Nội</strong></span>
-                  </div>
-                  <div className="shipping-line">
-                    <span className="ship-fee-icon"></span>
-                    <span>Phí Vận Chuyển: <strong>0₫</strong></span>
+                    <span>Không hỗ trợ</span>
                   </div>
                 </div>
               </div>
@@ -645,18 +683,31 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
                 </div>
               )}
 
-              <div className="promo-row">
-                <span className="promo-label">Số Lượng</span>
-                <div className="quantity-control-wrapper">
-                  <div className="quantity-selector">
-                    <button className="qty-btn" onClick={() => setQuantity(prev => Math.max(1, prev - 1))}>-</button>
-                    <input type="text" value={quantity} readOnly className="qty-input" />
-                    <button className="qty-btn" onClick={() => setQuantity(prev => Math.min(displayStock || 99, prev + 1))}>+</button>
+              <div className="promo-row" style={{ flexDirection: "column", alignItems: "flex-start" }}>
+                <div style={{ display: "flex", alignItems: "center", width: "100%" }}>
+                  <span className="promo-label">Số Lượng</span>
+                  <div className="quantity-control-wrapper">
+                    <div className="quantity-selector">
+                      <button className="qty-btn" onClick={handleDecreaseQuantity}>-</button>
+                      <input 
+                        type="text" 
+                        value={quantity} 
+                        onChange={handleQuantityChange}
+                        onBlur={handleQuantityBlur}
+                        className="qty-input" 
+                      />
+                      <button className="qty-btn" onClick={handleIncreaseQuantity}>+</button>
+                    </div>
+                    <span className="stock-hint">
+                      {selectedColor ? `${displayStock} sản phẩm màu ${selectedColor.name} có sẵn` : `${displayStock} sản phẩm có sẵn`}
+                    </span>
                   </div>
-                  <span className="stock-hint">
-                    {selectedColor ? `${displayStock} sản phẩm màu ${selectedColor.name} có sẵn` : `${displayStock} sản phẩm có sẵn`}
-                  </span>
                 </div>
+                {quantityError && (
+                  <div style={{ color: "var(--shopee-red, #ee4d2d)", fontSize: "13px", marginTop: "8px", marginLeft: "110px", fontWeight: "500" }}>
+                    {quantityError}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -715,6 +766,30 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
                       <line x1="12" y1="17" x2="12.01" y2="17"></line>
                     </svg>
                     Xem Shop
+                  </button>
+                  <button 
+                    className="shop-view-btn"
+                    onClick={() => {
+                      if (!user) {
+                        alert("Vui lòng đăng nhập để chat với shop.");
+                        onOpenLogin();
+                        return;
+                      }
+                      if (product.shop) {
+                        onChatWithStore({
+                          id: product.shop._id || product.shop,
+                          ownerId: product.shop.ownerId,
+                          name: product.shop.name,
+                          logo: product.shop.logo
+                        });
+                      }
+                    }}
+                    style={{ background: "white", color: "var(--shopee-red)", border: "1px solid var(--shopee-red)", fontWeight: "600" }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "3px" }}>
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    Chat Ngay
                   </button>
                 </div>
               </div>
@@ -898,8 +973,7 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
           </div>
         </div>
 
-        {/* Voucher Modal */}
-        {showVouchers && <VoucherModal onClose={() => setShowVouchers(false)} />}
+
 
         {/* Modal Chọn Màu Sắc Premium */}
         {showColorSelectionModal && (
@@ -1004,13 +1078,26 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout }) {
               </div>
 
               {/* Quantity Selector */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #eee", paddingTop: "16px" }}>
-                <span style={{ fontSize: "13px", fontWeight: "600", color: "#555" }}>Số Lượng</span>
-                <div className="quantity-selector" style={{ scale: "0.9" }}>
-                  <button className="qty-btn" onClick={() => setQuantity(prev => Math.max(1, prev - 1))}>-</button>
-                  <input type="text" value={quantity} readOnly className="qty-input" />
-                  <button className="qty-btn" onClick={() => setQuantity(prev => Math.min(displayStock || 99, prev + 1))}>+</button>
+              <div style={{ borderTop: "1px solid #eee", paddingTop: "16px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: "13px", fontWeight: "600", color: "#555" }}>Số Lượng</span>
+                  <div className="quantity-selector" style={{ scale: "0.9" }}>
+                    <button className="qty-btn" onClick={handleDecreaseQuantity}>-</button>
+                    <input 
+                      type="text" 
+                      value={quantity} 
+                      onChange={handleQuantityChange}
+                      onBlur={handleQuantityBlur}
+                      className="qty-input" 
+                    />
+                    <button className="qty-btn" onClick={handleIncreaseQuantity}>+</button>
+                  </div>
                 </div>
+                {quantityError && (
+                  <div style={{ color: "var(--shopee-red, #ee4d2d)", fontSize: "12px", marginTop: "8px", textAlign: "right", fontWeight: "500" }}>
+                    {quantityError}
+                  </div>
+                )}
               </div>
 
               {/* Confirm Submit */}

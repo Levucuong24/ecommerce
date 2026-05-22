@@ -12,4 +12,5 @@ module.exports = {
   Notification: require("./notification.model"),
   Store: require("./store.model"),
   Banner: require("./banner.model"),
+  ChatMessage: require("./chatMessage.model"),
 };
