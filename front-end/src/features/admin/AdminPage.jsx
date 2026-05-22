@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
 import AdminHeader from "./components/AdminHeader";
-import FlashSaleManager from "./components/FlashSaleManager";
 import { getAuthToken } from "../../utils/authStorage";
 import { DATA_EVENTS, emitDataChanged, subscribeDataChanged } from "../../utils/realtimeEvents";
 
@@ -15,13 +14,6 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
   const [banners, setBanners] = useState([]);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [products, setProducts] = useState([]);
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [showFlashSaleModal, setShowFlashSaleModal] = useState(false);
-  const [flashSaleData, setFlashSaleData] = useState({
-    enable: false,
-    startTime: "",
-    endTime: "",
-  });
 
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -325,12 +317,6 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
               >
                 🖼️ Banners
               </button>
-              <button 
-                className={`tab-btn ${activeTab === "flashsale" ? "active" : ""}`}
-                onClick={() => setActiveTab("flashsale")}
-              >
-                🔥 Flash Sale
-              </button>
             </div>
 
             <div className="content-shell animate-fade" style={{ animationDelay: "0.2s" }}>
@@ -525,8 +511,6 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
                     </table>
                   </div>
                 </div>
-              ) : activeTab === "flashsale" ? (
-                <FlashSaleManager apiUrl={API_URL} />
               ) : (
                 <div className="admin-table-wrapper" style={{ padding: "24px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
