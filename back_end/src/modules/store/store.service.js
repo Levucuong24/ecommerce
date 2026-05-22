@@ -44,7 +44,7 @@ const getStoreById = async (storeId) => {
 
 const getStoreProducts = async (storeId) => {
   await deactivateExpiredFlashSales();
-  return await Product.find({ storeId });
+  return await Product.find({ storeId }).populate("categoryId");
 };
 
 const getStoreReviews = async (storeId) => {
