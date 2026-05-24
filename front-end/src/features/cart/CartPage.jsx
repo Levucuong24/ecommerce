@@ -19,6 +19,51 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
   const [savedVoucherIds, setSavedVoucherIds] = useState([]);
   const [selectedVoucherId, setSelectedVoucherId] = useState("");
   const [apiCoupons, setApiCoupons] = useState([]);
+  const [fullName, setFullName] = useState(user?.name || "");
+  const [phone, setPhone] = useState(user?.phone || "");
+  const [addressDetail, setAddressDetail] = useState("");
+  const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
+
+  const handleCheckout = async () => {
+    if (!fullName.trim() || !phone.trim() || !addressDetail.trim()) {
+      alert("Vui lòng điền đầy đủ thông tin giao hàng!");
+      return;
+    }
+    
+    setIsCheckoutLoading(true);
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${apiUrl}/orders`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          addressSnapshot: {
+            fullName: fullName.trim(),
+            phone: phone.trim(),
+            detail: addressDetail.trim(),
+          },
+          paymentMethod: "COD",
+          selectedVoucherId: selectedVoucherId || undefined,
+        }),
+      });
+
+      if (response.ok) {
+        alert("Đặt hàng thành công!");
+        navigate("/orders/history");
+      } else {
+        const data = await response.json();
+        alert(data.message || "Đặt hàng thất bại, vui lòng thử lại!");
+      }
+    } catch (error) {
+      console.error("Lỗi đặt hàng:", error);
+      alert("Đã xảy ra lỗi khi đặt hàng!");
+    } finally {
+      setIsCheckoutLoading(false);
+    }
+  };
 
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem("savedVouchers") || "[]");
@@ -390,12 +435,44 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
                 </div>
               )}
 
+              <div style={{ marginBottom: "20px", paddingBottom: "20px", borderBottom: "1px dashed #eee" }}>
+                <h4 style={{ margin: "0 0 12px 0", fontSize: "14px", fontWeight: "600", color: "#333" }}>Thông Tin Giao Hàng</h4>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <input
+                    type="text"
+                    placeholder="Họ và tên người nhận"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    style={{ padding: "8px 12px", border: "1px solid #ddd", borderRadius: "4px", fontSize: "13px", width: "100%", boxSizing: "border-box" }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Số điện thoại"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    style={{ padding: "8px 12px", border: "1px solid #ddd", borderRadius: "4px", fontSize: "13px", width: "100%", boxSizing: "border-box" }}
+                  />
+                  <textarea
+                    placeholder="Địa chỉ giao hàng chi tiết"
+                    value={addressDetail}
+                    onChange={(e) => setAddressDetail(e.target.value)}
+                    rows="2"
+                    style={{ padding: "8px 12px", border: "1px solid #ddd", borderRadius: "4px", fontSize: "13px", width: "100%", boxSizing: "border-box", fontFamily: "inherit", resize: "none" }}
+                  />
+                </div>
+              </div>
+
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px", fontWeight: "bold", fontSize: "18px", color: "var(--primary)" }}>
                 <span>Tổng cộng:</span>
                 <span>{formatPrice(total)}đ</span>
               </div>
-              <button className="primary-btn" style={{ width: "100%", padding: "12px", fontSize: "16px" }}>
-                Mua Hàng
+              <button 
+                className="primary-btn" 
+                style={{ width: "100%", padding: "12px", fontSize: "16px" }}
+                onClick={handleCheckout}
+                disabled={isCheckoutLoading}
+              >
+                {isCheckoutLoading ? "Đang xử lý..." : "Mua Hàng"}
               </button>
             </div>
           </div>

@@ -7,6 +7,7 @@ const orderItemSchema = new mongoose.Schema(
     image: String,
     price: Number,
     quantity: Number,
+    color: String,
   },
   { _id: false }
 );
@@ -24,15 +25,20 @@ const orderSchema = new mongoose.Schema(
   {
     _id: mongoose.Schema.Types.ObjectId,
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    storeId: { type: mongoose.Schema.Types.ObjectId, ref: "Store", required: true },
     items: [orderItemSchema],
     addressSnapshot: addressSnapshotSchema,
     totalPrice: Number,
-    paymentMethod: String,
-    paymentStatus: String,
-    orderStatus: String,
-    createdAt: Date,
+    paymentMethod: { type: String, default: "COD" },
+    paymentStatus: { type: String, default: "pending" },
+    orderStatus: { type: String, default: "pending" },
+    commissionRate: { type: Number, default: 0.05 },
+    commissionAmount: { type: Number, default: 0 },
+    storeRevenue: { type: Number, default: 0 },
+    createdAt: { type: Date, default: Date.now },
   },
   { versionKey: false }
 );
 
 module.exports = mongoose.model("Order", orderSchema);
+

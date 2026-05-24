@@ -14,6 +14,7 @@ import AdminPage from "./features/admin/AdminPage";
 import StaffPage from "./features/staff/StaffPage";
 import LikedProductsPage from "./features/shop/LikedProductsPage";
 import VoucherPage from "./features/home/VoucherPage";
+import OrderHistoryPage from "./features/shop/OrderHistoryPage";
 import { clearAuthSession, getAuthUser, saveAuthSession, getAuthToken } from "./utils/authStorage";
 import { DATA_EVENTS, emitDataChanged } from "./utils/realtimeEvents";
 import ChatWidget from "./components/ChatWidget";
@@ -354,6 +355,17 @@ function App() {
           path="/vouchers"
           element={
             <VoucherPage
+              user={user}
+              onLogout={handleLogout}
+              onOpenLogin={() => openAuthPage("login")}
+              onOpenCart={openCartPage}
+            />
+          }
+        />
+        <Route
+          path="/orders/history"
+          element={
+            <OrderHistoryPage
               user={user}
               onLogout={handleLogout}
               onOpenLogin={() => openAuthPage("login")}

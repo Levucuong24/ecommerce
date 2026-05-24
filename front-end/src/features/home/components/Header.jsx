@@ -224,6 +224,9 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
                 Hi, {user.name}
               </span>
               <div className="user-dropdown-popup">
+                <button type="button" onClick={() => window.location.href = "/orders/history"} className="admin-dash-btn">
+                  Đơn mua của tôi
+                </button>
                 <button type="button" onClick={() => window.location.href = "/liked-products"} className="admin-dash-btn">
                   Sản phẩm yêu thích {likedCount > 0 && <span style={{ color: "var(--primary)", fontWeight: "bold" }}>({likedCount})</span>}
                 </button>

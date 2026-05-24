@@ -14,14 +14,21 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
   const [banners, setBanners] = useState([]);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [products, setProducts] = useState([]);
+  const [orders, setOrders] = useState([]);
 
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
+  const formatPrice = (price) => {
+    if (!price) return "0";
+    return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
 
   useEffect(() => {
     if (user?.role === "admin") {
       if (activeTab === "users") fetchUsers();
       else if (activeTab === "stores") fetchStores();
       else if (activeTab === "categories") fetchCategories();
+      else if (activeTab === "orders") fetchOrders();
       else fetchBanners();
     } else {
       setLoading(false);
@@ -111,6 +118,49 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchOrders = async () => {
+    setLoading(true);
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/orders`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error("Không thể tải danh sách đơn hàng");
+      const data = await response.json();
+      setOrders(data.items || data || []);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateOrderStatus = async (orderId, status) => {
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/orders/${orderId}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status }),
+      });
+      if (response.ok) {
+        alert("Cập nhật trạng thái đơn hàng thành công!");
+        fetchOrders();
+      } else {
+        const err = await response.json();
+        alert(err.message || "Lỗi khi cập nhật trạng thái");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Lỗi hệ thống");
     }
   };
 
@@ -268,6 +318,16 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
     }
   };
 
+  const completedPlatformOrders = orders.filter(o => o.orderStatus === "completed");
+  const totalSales = completedPlatformOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+  const totalAdminComm = completedPlatformOrders.reduce((sum, o) => sum + (o.commissionAmount || 0), 0);
+  const totalMerchantRev = completedPlatformOrders.reduce((sum, o) => sum + (o.storeRevenue || 0), 0);
+
+  const pendingPlatformOrders = orders.filter(o => o.orderStatus === "pending" || o.orderStatus === "processing");
+  const totalPendingSales = pendingPlatformOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+  const totalPendingComm = pendingPlatformOrders.reduce((sum, o) => sum + (o.commissionAmount || 0), 0);
+  const totalPendingMerchantRev = pendingPlatformOrders.reduce((sum, o) => sum + (o.storeRevenue || 0), 0);
+
   return (
     <div className="admin-page-wrapper admin-page-main">
       <AdminHeader
@@ -316,6 +376,12 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
                 onClick={() => setActiveTab("banners")}
               >
                 🖼️ Banners
+              </button>
+              <button 
+                className={`tab-btn ${activeTab === "orders" ? "active" : ""}`}
+                onClick={() => setActiveTab("orders")}
+              >
+                📦 Doanh thu & Đơn hàng
               </button>
             </div>
 
@@ -511,7 +577,7 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
                     </table>
                   </div>
                 </div>
-              ) : (
+              ) : activeTab === "banners" ? (
                 <div className="admin-table-wrapper" style={{ padding: "24px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
                     <h3>Quản lý Banner Trang chủ</h3>
@@ -544,6 +610,127 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
                         </div>
                       ))
                     )}
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                  {/* Revenue Cards Row */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px" }}>
+                    <div style={{ background: "#f8fafc", padding: "20px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                        <span style={{ fontSize: "14px", color: "#64748b", fontWeight: "600" }}>Tổng giao dịch toàn sàn</span>
+                        <span style={{ fontSize: "24px" }}>🛍️</span>
+                      </div>
+                      <div style={{ fontSize: "22px", fontWeight: "bold", color: "#0f172a" }}>{formatPrice(totalSales)}đ</div>
+                      <div style={{ fontSize: "12px", color: "#64748b", marginTop: "5px" }}>Doanh số thu từ đơn hàng Hoàn thành</div>
+                    </div>
+                    <div style={{ background: "#ecfdf5", padding: "20px", borderRadius: "8px", border: "1px solid #d1fae5" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                        <span style={{ fontSize: "14px", color: "#065f46", fontWeight: "600" }}>Thu nhập Admin (5% chiết khấu)</span>
+                        <span style={{ fontSize: "24px" }}>💎</span>
+                      </div>
+                      <div style={{ fontSize: "22px", fontWeight: "bold", color: "#059669" }}>{formatPrice(totalAdminComm)}đ</div>
+                      <div style={{ fontSize: "12px", color: "#059669", marginTop: "5px" }}>Tổng hoa hồng thực thu từ hệ thống</div>
+                    </div>
+                    <div style={{ background: "#f0f9ff", padding: "20px", borderRadius: "8px", border: "1px solid #e0f2fe" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                        <span style={{ fontSize: "14px", color: "#0369a1", fontWeight: "600" }}>Tổng thu nhập Shop (95%)</span>
+                        <span style={{ fontSize: "24px" }}>🏬</span>
+                      </div>
+                      <div style={{ fontSize: "22px", fontWeight: "bold", color: "#0284c7" }}>{formatPrice(totalMerchantRev)}đ</div>
+                      <div style={{ fontSize: "12px", color: "#0284c7", marginTop: "5px" }}>Tiền chuyển cho các chủ Shop (Staff)</div>
+                    </div>
+                  </div>
+
+                  {/* Projected Revenues */}
+                  <div style={{ background: "#fffbeb", padding: "20px", borderRadius: "8px", border: "1px solid #fef3c7" }}>
+                    <h4 style={{ margin: "0 0 10px 0", fontSize: "16px", color: "#b45309" }}>Dự kiến Doanh thu & Phí sàn (Đơn hàng đang xử lý)</h4>
+                    <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "20px", fontSize: "14px" }}>
+                      <div>Đơn hàng chưa giao/chờ xử lý: <strong>{pendingPlatformOrders.length} đơn</strong></div>
+                      <div>Dự kiến doanh số phát sinh: <strong>{formatPrice(totalPendingSales)}đ</strong></div>
+                      <div>Dự kiến phí sàn thu thêm (5%): <strong style={{ color: "#ef4444" }}>{formatPrice(totalPendingComm)}đ</strong></div>
+                      <div>Dự kiến thực nhận của Shop: <strong style={{ color: "#10b981" }}>{formatPrice(totalPendingMerchantRev)}đ</strong></div>
+                    </div>
+                  </div>
+
+                  {/* Orders List Table */}
+                  <div className="admin-table-wrapper" style={{ border: "1px solid #e2e8f0", borderRadius: "8px", overflow: "hidden" }}>
+                    <div style={{ padding: "16px 20px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", fontWeight: "bold" }}>Quản lý Đơn hàng Toàn sàn</div>
+                    <table className="admin-table" style={{ fontSize: "13px" }}>
+                      <thead>
+                        <tr>
+                          <th>Mã đơn hàng</th>
+                          <th>Cửa hàng (Shop)</th>
+                          <th>Khách hàng</th>
+                          <th>Ngày tạo</th>
+                          <th>Tổng tiền</th>
+                          <th>Phí sàn (5%)</th>
+                          <th>Shop nhận (95%)</th>
+                          <th>Trạng thái</th>
+                          <th>Cập nhật trạng thái</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {orders.length === 0 ? (
+                          <tr>
+                            <td colSpan="9" style={{ textAlign: "center", padding: "20px", color: "#64748b" }}>Chưa có đơn hàng nào trên hệ thống.</td>
+                          </tr>
+                        ) : (
+                          orders.map((o) => (
+                            <tr key={o._id}>
+                              <td><strong style={{ fontSize: "11px" }}>{o._id}</strong></td>
+                              <td><strong>{o.storeId?.name || "Shop"}</strong></td>
+                              <td>{o.userId?.name || "Khách"}</td>
+                              <td>{new Date(o.createdAt).toLocaleDateString("vi-VN")}</td>
+                              <td>{formatPrice(o.totalPrice)}đ</td>
+                              <td style={{ color: "#ef4444" }}>{formatPrice(o.commissionAmount)}đ</td>
+                              <td style={{ color: "#10b981", fontWeight: "600" }}>{formatPrice(o.storeRevenue)}đ</td>
+                              <td>
+                                <span style={{
+                                  padding: "4px 8px",
+                                  borderRadius: "4px",
+                                  fontSize: "11px",
+                                  fontWeight: "600",
+                                  background:
+                                    o.orderStatus === "pending" ? "#fef9c3" :
+                                    o.orderStatus === "processing" ? "#dbeafe" :
+                                    o.orderStatus === "completed" ? "#dcfce7" : "#fee2e2",
+                                  color:
+                                    o.orderStatus === "pending" ? "#a16207" :
+                                    o.orderStatus === "processing" ? "#1d4ed8" :
+                                    o.orderStatus === "completed" ? "#15803d" : "#b91c1c",
+                                }}>
+                                  {o.orderStatus === "pending" ? "Chờ xử lý" :
+                                   o.orderStatus === "processing" ? "Đang giao" :
+                                   o.orderStatus === "completed" ? "Hoàn thành" : "Đã hủy"}
+                                </span>
+                              </td>
+                              <td>
+                                {(o.orderStatus === "pending" || o.orderStatus === "processing") && (
+                                  <select
+                                    value={o.orderStatus}
+                                    onChange={(e) => handleUpdateOrderStatus(o._id, e.target.value)}
+                                    style={{
+                                      padding: "4px 8px",
+                                      borderRadius: "4px",
+                                      border: "1px solid #cbd5e1",
+                                      fontSize: "12px",
+                                      outline: "none",
+                                      cursor: "pointer"
+                                    }}
+                                  >
+                                    <option value="pending" disabled>Chờ xử lý</option>
+                                    <option value="processing">Đang giao</option>
+                                    <option value="completed">Hoàn thành</option>
+                                    <option value="cancelled">Hủy đơn</option>
+                                  </select>
+                                )}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               )}
