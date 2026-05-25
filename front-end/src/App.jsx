@@ -214,10 +214,32 @@ function App() {
     if (
       !registerData.name ||
       !registerData.email ||
+      !registerData.phone ||
       !registerData.password ||
       !registerData.confirmPassword
     ) {
       setMessage("Vui long dien day du cac thong tin bat buoc");
+      setMessageType("error");
+      return;
+    }
+
+    if (!registerData.email.toLowerCase().endsWith("@gmail.com")) {
+      setMessage("Email đăng ký phải có đuôi @gmail.com");
+      setMessageType("error");
+      return;
+    }
+
+    const cleanPhone = registerData.phone.trim();
+    const allowedPrefixes = [
+      "032", "033", "034", "035", "036", "037", "038", "039", 
+      "086", "096", "097", "098", 
+      "081", "082", "083", "084", "085", "088", "091", "094", 
+      "070", "076", "077", "078", "079", "089", "090", "093", 
+      "052", "056", "058", "092", "059", "099"
+    ];
+    const isValid = cleanPhone.length === 10 && allowedPrefixes.some(prefix => cleanPhone.startsWith(prefix)) && /^\d+$/.test(cleanPhone);
+    if (!isValid) {
+      setMessage("Số điện thoại không hợp lệ hoặc không thuộc nhà mạng được hỗ trợ");
       setMessageType("error");
       return;
     }

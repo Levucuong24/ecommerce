@@ -50,6 +50,7 @@ function RegisterForm({
             placeholder="Ví dụ: 0123456789"
             value={formData.phone}
             onChange={onChange}
+            required
           />
         </label>
 

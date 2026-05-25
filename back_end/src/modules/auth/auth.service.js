@@ -24,8 +24,29 @@ const sanitizeUser = (user) => {
 };
 
 const registerUser = async ({ name, email, password, phone }) => {
-  if (!name || !email || !password) {
-    const error = new Error("Tên, email và mật khẩu là bắt buộc");
+  if (!name || !email || !password || !phone) {
+    const error = new Error("Tên, email, mật khẩu và số điện thoại là bắt buộc");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!email.toLowerCase().endsWith("@gmail.com")) {
+    const error = new Error("Email đăng ký phải có đuôi @gmail.com");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const cleanPhone = phone.trim();
+  const allowedPrefixes = [
+    "032", "033", "034", "035", "036", "037", "038", "039", 
+    "086", "096", "097", "098", 
+    "081", "082", "083", "084", "085", "088", "091", "094", 
+    "070", "076", "077", "078", "079", "089", "090", "093", 
+    "052", "056", "058", "092", "059", "099"
+  ];
+  const isValid = cleanPhone.length === 10 && allowedPrefixes.some(prefix => cleanPhone.startsWith(prefix)) && /^\d+$/.test(cleanPhone);
+  if (!isValid) {
+    const error = new Error("Số điện thoại không hợp lệ hoặc không thuộc nhà mạng được hỗ trợ");
     error.statusCode = 400;
     throw error;
   }
