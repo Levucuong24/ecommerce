@@ -19,8 +19,15 @@ const getStoreConversations = asyncHandler(async (req, res) => {
   res.json(conversations);
 });
 
+const getUserConversations = asyncHandler(async (req, res) => {
+  const conversations = await chatService.getUserConversations(req.user.id);
+  res.json(conversations);
+});
+
 module.exports = {
   getMessages,
   sendMessage,
   getStoreConversations,
+  getUserConversations,
 };
+

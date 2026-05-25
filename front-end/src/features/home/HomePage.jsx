@@ -8,8 +8,25 @@ import FlashSale from "./components/FlashSale";
 import ProductGrid from "./components/ProductGrid";
 import { bannerImages, imageMap, buildBadge } from "./utils";
 import { DATA_EVENTS, subscribeDataChanged } from "../../utils/realtimeEvents";
+import { getAuthToken } from "../../utils/authStorage";
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const assetBaseUrl = apiUrl.replace(/\/api\/?$/, "");
+
+const getItems = (data) => {
+  if (Array.isArray(data?.items)) return data.items;
+  if (Array.isArray(data)) return data;
+  return [];
+};
+
+const resolveProductImage = (images = []) => {
+  const image = images.find(Boolean);
+  if (!image) return null;
+  if (imageMap[image]) return imageMap[image];
+  if (/^https?:\/\//i.test(image)) return image;
+  if (image.startsWith("/")) return image;
+  return `${assetBaseUrl}/uploads/${image}`;
+};
 
 function HomePage({ onOpenLogin, onOpenCart, user, onLogout }) {
   const navigate = useNavigate();
@@ -39,13 +56,13 @@ function HomePage({ onOpenLogin, onOpenCart, user, onLogout }) {
         setCategories(catData.items);
       }
 
-      if (allProductRes.ok && Array.isArray(productData.items)) {
-        const allMapped = productData.items.map(mapProduct);
+      if (allProductRes.ok) {
+        const allMapped = getItems(productData).map(mapProduct);
         setProducts(allMapped);
       }
 
-      if (flashProductRes.ok && Array.isArray(flashData.items)) {
-        const flashMapped = flashData.items.map(mapProduct);
+      if (flashProductRes.ok) {
+        const flashMapped = getItems(flashData).map(mapProduct);
         const now = new Date();
         const saleItems = flashMapped.filter((item) => {
           if (!item.isFlashSale) return false;
@@ -112,9 +129,9 @@ function HomePage({ onOpenLogin, onOpenCart, user, onLogout }) {
           : item.soldCount || 0
       }`,
       badge: buildBadge(item.price, item.discountPrice),
-      image: imageMap[item.images?.[0]] || item.images?.[0] || null,
+      image: resolveProductImage(item.images),
       categoryName: item.categoryId?.name || "Khác",
-      isLiked: item.likes?.includes(userId),
+      isLiked: item.likes?.some((likeId) => String(likeId) === String(userId)),
       onLike: handleLike,
       isFlashSale: item.isFlashSale,
       flashSaleStartTime: item.flashSaleStartTime,
@@ -131,8 +148,8 @@ function HomePage({ onOpenLogin, onOpenCart, user, onLogout }) {
       );
       const data = await res.json();
 
-      if (res.ok && Array.isArray(data.items)) {
-        setProducts(data.items.map(mapProduct));
+      if (res.ok) {
+        setProducts(getItems(data).map(mapProduct));
       } else {
         setProducts([]);
       }

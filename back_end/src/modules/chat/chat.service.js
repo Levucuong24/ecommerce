@@ -107,8 +107,51 @@ const getStoreConversations = async (userId) => {
   return conversations;
 };
 
+const getUserConversations = async (userId) => {
+  const currentUserId = userId.toString();
+
+  const messages = await ChatMessage.find({
+    $or: [
+      { senderId: currentUserId },
+      { receiverId: currentUserId }
+    ]
+  }).sort({ createdAt: -1 });
+
+  const conversationMap = new Map();
+
+  for (const msg of messages) {
+    const storeIdStr = msg.storeId.toString();
+
+    if (!conversationMap.has(storeIdStr)) {
+      conversationMap.set(storeIdStr, {
+        storeId: msg.storeId,
+        lastMessage: msg.content,
+        lastMessageAt: msg.createdAt,
+        senderRole: msg.senderRole,
+      });
+    }
+  }
+
+  const conversations = [];
+  for (const conv of conversationMap.values()) {
+    const store = await Store.findById(conv.storeId).select("name logo ownerId");
+    if (store) {
+      conversations.push({
+        ...conv,
+        storeName: store.name,
+        storeLogo: store.logo,
+        storeOwnerId: store.ownerId,
+      });
+    }
+  }
+
+  return conversations;
+};
+
 module.exports = {
   getMessages,
   sendMessage,
   getStoreConversations,
+  getUserConversations,
 };
+

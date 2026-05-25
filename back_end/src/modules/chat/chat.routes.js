@@ -7,6 +7,7 @@ const router = express.Router();
 router.use(protect);
 
 router.get("/conversations", chatController.getStoreConversations);
+router.get("/conversations/user", chatController.getUserConversations);
 router.get("/:storeId", chatController.getMessages);
 router.post("/", chatController.sendMessage);
 
