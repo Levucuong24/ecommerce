@@ -62,14 +62,14 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout, onChatWith
           } else {
             const lastActive = data.shop.lastActive || data.shop.createdAt;
             if (!lastActive) {
-              setShopOnlineStatus("Online vừa mới");
+              setShopOnlineStatus("Vừa hoạt động");
             } else {
               const lastActiveDate = new Date(lastActive);
               const diff = Math.floor((new Date() - lastActiveDate) / 60000);
-              if (diff < 1) setShopOnlineStatus("Online vừa mới");
-              else if (diff < 60) setShopOnlineStatus(`Online ${diff} phút trước`);
-              else if (diff < 1440) setShopOnlineStatus(`Online ${Math.floor(diff / 60)} giờ trước`);
-              else setShopOnlineStatus(`Online ${Math.floor(diff / 1440)} ngày trước`);
+              if (diff < 1) setShopOnlineStatus("Vừa hoạt động");
+              else if (diff < 60) setShopOnlineStatus(`Hoạt động ${diff} phút trước`);
+              else if (diff < 1440) setShopOnlineStatus(`Hoạt động ${Math.floor(diff / 60)} giờ trước`);
+              else setShopOnlineStatus(`Hoạt động ${Math.floor(diff / 1440)} ngày trước`);
             }
           }
         }

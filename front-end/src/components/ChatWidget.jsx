@@ -62,7 +62,7 @@ function ChatWidget({ activeStore, onClose, currentUser }) {
 
   // Poll for messages in active chat
   useEffect(() => {
-    if (!currentStore || isMinimized || !currentUser) return;
+    if (!currentStore || isMinimized || !currentUser || currentUser.role !== "customer") return;
     
     fetchMessages(true);
     
@@ -75,7 +75,7 @@ function ChatWidget({ activeStore, onClose, currentUser }) {
 
   // Poll for conversation list when not in active chat
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser || currentUser.role !== "customer") return;
     if (currentStore || isMinimized) return;
 
     setLoadingConversations(true);
@@ -151,7 +151,7 @@ function ChatWidget({ activeStore, onClose, currentUser }) {
     return date.toLocaleDateString("vi-VN", { day: "numeric", month: "numeric" });
   };
 
-  if (!currentUser) return null;
+  if (!currentUser || currentUser.role !== "customer") return null;
 
   if (isMinimized) {
     return (
