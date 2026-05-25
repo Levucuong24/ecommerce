@@ -93,28 +93,55 @@ const createOrder = async (userId, addressSnapshot, paymentMethod, selectedVouch
   // Apply Voucher if present
   let overallDiscount = 0;
   if (selectedVoucherId) {
-    const coupon = await Coupon.findById(selectedVoucherId);
-    if (coupon && coupon.isActive && (!coupon.expiredAt || new Date(coupon.expiredAt) > new Date())) {
-      if (overallSubtotal >= coupon.minOrder) {
-        if (coupon.discountType === "percentage" || coupon.type === "percent") {
-          const pct = coupon.value || coupon.discountPercent || 0;
-          overallDiscount = (overallSubtotal * pct) / 100;
-        } else {
-          overallDiscount = coupon.value || coupon.discountAmount || 0;
-        }
-        
-        if (overallDiscount > overallSubtotal) {
-          overallDiscount = overallSubtotal;
-        }
+    let coupon = null;
+    
+    // Check if it's a mock voucher
+    const mockVouchers = [
+      { id: 'v1', code: 'WELCOME17', title: 'Giảm 17%', minOrder: 0, value: 17, type: 'percent' },
+      { id: 'v2', code: 'DISC25K', title: 'Giảm 25K', minOrder: 200000, value: 25000, type: 'fixed' },
+      { id: 'v3', code: 'FREESHIP', title: 'Miễn Phí Vận Chuyển', minOrder: 50000, value: 15000, type: 'fixed' },
+      { id: 'v4', code: 'DISC50K', title: 'Giảm 50K', minOrder: 500000, value: 50000, type: 'fixed' }
+    ];
+    
+    const matchedMock = mockVouchers.find(mv => mv.id === selectedVoucherId);
+    if (matchedMock) {
+      coupon = matchedMock;
+    } else if (mongoose.Types.ObjectId.isValid(selectedVoucherId)) {
+      coupon = await Coupon.findById(selectedVoucherId);
+    }
+    
+    if (coupon) {
+      // For DB coupons, check isActive and expiry
+      const isDbCoupon = coupon.save !== undefined;
+      const isExpired = isDbCoupon && coupon.expiredAt && new Date(coupon.expiredAt) <= new Date();
+      const isActive = isDbCoupon ? coupon.isActive : true;
+      
+      if (isActive && !isExpired) {
+        if (overallSubtotal >= coupon.minOrder) {
+          const type = coupon.type || (coupon.discountType === "percentage" ? "percent" : "fixed");
+          const val = coupon.value || coupon.discountPercent || coupon.discountAmount || 0;
+          
+          if (type === "percentage" || type === "percent") {
+            overallDiscount = (overallSubtotal * val) / 100;
+          } else {
+            overallDiscount = val;
+          }
+          
+          if (overallDiscount > overallSubtotal) {
+            overallDiscount = overallSubtotal;
+          }
 
-        // Update Coupon usage
-        if (coupon.maxUsage !== undefined && coupon.maxUsage !== null) {
-          coupon.maxUsage = Math.max(0, coupon.maxUsage - 1);
-          if (coupon.maxUsage === 0) {
-            coupon.isActive = false;
+          // Update DB Coupon usage
+          if (isDbCoupon) {
+            if (coupon.maxUsage !== undefined && coupon.maxUsage !== null) {
+              coupon.maxUsage = Math.max(0, coupon.maxUsage - 1);
+              if (coupon.maxUsage === 0) {
+                coupon.isActive = false;
+              }
+            }
+            await coupon.save();
           }
         }
-        await coupon.save();
       }
     }
   }
@@ -196,13 +223,40 @@ const updateOrderStatus = async (orderId, userId, role, status) => {
     throw error;
   }
 
-  // If not admin, verify if the user owns the store
+  // If not admin, check authorization
   if (role !== "admin") {
-    const store = await Store.findOne({ _id: order.storeId, ownerId: userId });
-    if (!store) {
-      const error = new Error("Bạn không có quyền cập nhật đơn hàng này");
-      error.statusCode = 403;
-      throw error;
+    const isBuyer = order.userId.toString() === userId.toString();
+    const isCancelRequest = status === "cancelled";
+    const isPendingOrder = order.orderStatus === "pending";
+
+    // Buyer can cancel their own order ONLY if it is still pending
+    if (!(isBuyer && isCancelRequest && isPendingOrder)) {
+      // Otherwise, the user must be the store owner
+      const store = await Store.findOne({ _id: order.storeId, ownerId: userId });
+      if (!store) {
+        const error = new Error("Bạn không có quyền cập nhật đơn hàng này");
+        error.statusCode = 403;
+        throw error;
+      }
+    }
+  }
+
+  if (status === "cancelled" && order.orderStatus !== "cancelled") {
+    // Restore stock and decrement soldCount
+    for (const item of order.items) {
+      const product = await Product.findById(item.productId);
+      if (product) {
+        if (item.color) {
+          const colorObj = product.colors.find(c => c.name === item.color);
+          if (colorObj) {
+            colorObj.stock += item.quantity;
+          }
+        } else {
+          product.stock += item.quantity;
+        }
+        product.soldCount = Math.max(0, (product.soldCount || 0) - item.quantity);
+        await product.save();
+      }
     }
   }
 

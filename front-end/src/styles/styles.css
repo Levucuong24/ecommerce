@@ -979,6 +979,7 @@ a {
 .shop-page,
 .liked-products-page,
 .following-shops-page,
+.order-history-page,
 .cart-page {
   padding-top: 180px;
   background-color: var(--bg-main);

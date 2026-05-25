@@ -26,7 +26,8 @@ function OrderHistoryPage({ user, onLogout, onOpenLogin, onOpenCart }) {
       });
       if (response.ok) {
         const data = await response.json();
-        setOrders(data);
+        const activeOrders = data.filter(order => order.orderStatus !== "cancelled");
+        setOrders(activeOrders);
       }
     } catch (error) {
       console.error("Lỗi khi tải lịch sử đơn hàng:", error);

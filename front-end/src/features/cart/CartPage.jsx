@@ -51,6 +51,11 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
       });
 
       if (response.ok) {
+        if (selectedVoucherId) {
+          const saved = JSON.parse(localStorage.getItem("savedVouchers") || "[]");
+          const updated = saved.filter(id => id !== selectedVoucherId);
+          localStorage.setItem("savedVouchers", JSON.stringify(updated));
+        }
         alert("Đặt hàng thành công!");
         navigate("/orders/history");
       } else {
@@ -410,7 +415,7 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
                       );
                     })}
                     {/* API Coupons (Auto-assigned like WELCOME) */}
-                    {apiCoupons.map(v => {
+                    {apiCoupons.filter(v => v.isActive !== false && (!v.expiredAt || new Date(v.expiredAt) > new Date())).map(v => {
                       const isEligible = subtotal >= (v.minOrder || 0);
                       const displayTitle = v.code.startsWith('WELCOME-') ? `Voucher người mới (${v.code})` : v.code;
                       return (
