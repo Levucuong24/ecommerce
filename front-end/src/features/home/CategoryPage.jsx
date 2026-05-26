@@ -4,6 +4,8 @@ import Header from "./components/Header";
 import ProductGrid from "./components/ProductGrid";
 import { imageMap, buildBadge } from "./utils";
 import { getAuthToken } from "../../utils/authStorage";
+import NotFound from "../../components/NotFound";
+
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const DEFAULT_SORT = "-likeCount";
@@ -33,7 +35,9 @@ function CategoryPage({ user, onLogout, onOpenLogin, onOpenCart }) {
   const [ratingFilter, setRatingFilter] = useState(0);
   const [showSpinner, setShowSpinner] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [notFound, setNotFound] = useState(false);
   const userId = user?.id || user?._id;
+
 
   const handleSort = (sortField) => {
     setActiveSort(sortField);
@@ -98,23 +102,37 @@ function CategoryPage({ user, onLogout, onOpenLogin, onOpenCart }) {
       // Extract ID from slug (it's the last part after the last hyphen)
       const parts = categorySlug.split("-");
       const categoryId = parts[parts.length - 1];
+
+      // Check if categoryId is a valid 24-character hex string
+      const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(categoryId);
+      if (!isValidObjectId) {
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
       
       const [prodRes, catRes] = await Promise.all([
         fetch(`${apiUrl}/products?categoryId=${categoryId}&limit=50`),
         fetch(`${apiUrl}/categories/${categoryId}`)
       ]);
 
+      if (!catRes.ok) {
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
+
       if (prodRes.ok) {
         const prodData = await prodRes.json();
         setProducts(prodData.items.map(mapProduct));
       }
 
-      if (catRes.ok) {
-        const catData = await catRes.json();
-        setCategoryName(catData.name);
-      }
+      const catData = await catRes.json();
+      setCategoryName(catData.name);
+      setNotFound(false);
     } catch (err) {
       console.error("Lỗi tải sản phẩm danh mục:", err);
+      setNotFound(true);
     } finally {
       setLoading(false);
     }
@@ -158,6 +176,7 @@ function CategoryPage({ user, onLogout, onOpenLogin, onOpenCart }) {
     setActiveSort(DEFAULT_SORT);
     setPriceSortValue("");
     setRatingFilter(0);
+    setNotFound(false);
   }, [categorySlug]);
 
   useEffect(() => {
@@ -176,6 +195,10 @@ function CategoryPage({ user, onLogout, onOpenLogin, onOpenCart }) {
   useEffect(() => {
     fetchCategoryProducts();
   }, [fetchCategoryProducts]);
+
+  if (notFound) {
+    return <NotFound />;
+  }
 
   return (
     <main className="category-page shopee-inspired">

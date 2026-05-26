@@ -18,6 +18,8 @@ import OrderHistoryPage from "./features/shop/OrderHistoryPage";
 import { clearAuthSession, getAuthUser, saveAuthSession, getAuthToken } from "./utils/authStorage";
 import { DATA_EVENTS, emitDataChanged } from "./utils/realtimeEvents";
 import ChatWidget from "./components/ChatWidget";
+import NotFound from "./components/NotFound";
+
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const allowedRoles = new Set(["admin", "staff", "customer"]);
@@ -465,23 +467,11 @@ function App() {
         />
         <Route
           path="*"
-          element={<NotFound onBackHome={goHomePage} />}
+          element={<NotFound />}
         />
       </Routes>
       <ChatWidget activeStore={activeChatStore} onClose={() => setActiveChatStore(null)} currentUser={user} />
     </>
-  );
-}
-
-function NotFound({ onBackHome }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh", fontFamily: "system-ui, sans-serif", background: "#f8fafc", color: "#334155" }}>
-      <h1 style={{ fontSize: "72px", margin: "0", color: "#ee4d2d", fontWeight: "bold" }}>404</h1>
-      <p style={{ fontSize: "20px", marginBottom: "30px", fontWeight: "500", textAlign: "center" }}>this is not the web page you are looking for</p>
-      <button onClick={onBackHome} style={{ padding: "12px 24px", background: "#ee4d2d", color: "white", border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "16px", fontWeight: "600", transition: "opacity 0.2s" }} onMouseEnter={(e) => e.target.style.opacity = "0.9"} onMouseLeave={(e) => e.target.style.opacity = "1"}>
-        Quay lại trang chủ
-      </button>
-    </div>
   );
 }
 
