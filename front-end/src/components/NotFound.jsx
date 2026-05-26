@@ -1,7 +1,18 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 function NotFound() {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const hideEvent = new CustomEvent("toggle-chat-widget", { detail: { hide: true } });
+    window.dispatchEvent(hideEvent);
+
+    return () => {
+      const showEvent = new CustomEvent("toggle-chat-widget", { detail: { hide: false } });
+      window.dispatchEvent(showEvent);
+    };
+  }, []);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh", fontFamily: "system-ui, sans-serif", background: "#f8fafc", color: "#334155" }}>

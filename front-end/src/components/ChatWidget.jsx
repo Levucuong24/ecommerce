@@ -12,8 +12,20 @@ function ChatWidget({ activeStore, onClose, currentUser }) {
   
   const [conversations, setConversations] = useState([]);
   const [loadingConversations, setLoadingConversations] = useState(false);
+  const [isHiddenByPage, setIsHiddenByPage] = useState(false);
 
   const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    const handleToggleChat = (e) => {
+      setIsHiddenByPage(!!e.detail?.hide);
+    };
+    window.addEventListener("toggle-chat-widget", handleToggleChat);
+    return () => {
+      window.removeEventListener("toggle-chat-widget", handleToggleChat);
+    };
+  }, []);
+
 
   // Sync currentStore with activeStore prop
   useEffect(() => {
@@ -152,6 +164,8 @@ function ChatWidget({ activeStore, onClose, currentUser }) {
     if (hours < 24) return `${hours} giờ trước`;
     return date.toLocaleDateString("vi-VN", { day: "numeric", month: "numeric" });
   };
+
+  if (isHiddenByPage) return null;
 
   if (!currentUser || currentUser.role !== "customer") return null;
 
