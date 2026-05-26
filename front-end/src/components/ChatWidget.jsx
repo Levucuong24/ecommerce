@@ -8,7 +8,7 @@ function ChatWidget({ activeStore, onClose, currentUser }) {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(true);
   
   const [conversations, setConversations] = useState([]);
   const [loadingConversations, setLoadingConversations] = useState(false);
@@ -20,6 +20,8 @@ function ChatWidget({ activeStore, onClose, currentUser }) {
     if (activeStore) {
       setCurrentStore(activeStore);
       setIsMinimized(false);
+    } else {
+      setCurrentStore(null);
     }
   }, [activeStore]);
 
@@ -280,7 +282,10 @@ function ChatWidget({ activeStore, onClose, currentUser }) {
             _
           </button>
           <button 
-            onClick={onClose}
+            onClick={() => {
+              setIsMinimized(true);
+              if (onClose) onClose();
+            }}
             style={{
               background: "none",
               border: "none",
