@@ -141,14 +141,15 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
     }
   };
 
-  const openDashboard = () => {
-    if (user?.role === "admin") {
-      window.location.href = "/admin";
+  const handleSellerChannelClick = () => {
+    if (!user) {
+      onOpenLogin();
       return;
     }
-
-    if (user?.role === "staff") {
-      window.location.href = "/staff";
+    if (user.role === "admin") {
+      navigate("/admin");
+    } else {
+      navigate("/staff");
     }
   };
 
@@ -156,7 +157,7 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
     <header className="shop-header">
       <div className="shop-header-top">
         <div className="shop-top-links">
-          <span>Kenh nguoi ban</span>
+          <span onClick={handleSellerChannelClick} style={{ cursor: "pointer" }}>Kênh người dùng</span>
           <span>Tai ung dung</span>
           <span>Ket noi</span>
         </div>

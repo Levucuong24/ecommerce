@@ -6,6 +6,7 @@ import HeroCarousel from "./components/HeroCarousel";
 import CategoryList from "./components/CategoryList";
 import FlashSale from "./components/FlashSale";
 import ProductGrid from "./components/ProductGrid";
+import Footer from "./components/Footer";
 import { bannerImages, imageMap, buildBadge } from "./utils";
 import { DATA_EVENTS, subscribeDataChanged } from "../../utils/realtimeEvents";
 import { getAuthToken } from "../../utils/authStorage";
@@ -201,6 +202,8 @@ function HomePage({ onOpenLogin, onOpenCart, user, onLogout }) {
           </>
         )}
       </section>
+
+      <Footer />
     </main>
   );
 }

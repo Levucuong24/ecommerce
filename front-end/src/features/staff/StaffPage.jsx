@@ -6,7 +6,7 @@ import StoreDashboard from "./components/StoreDashboard";
 import { getAuthToken } from "../../utils/authStorage";
 import { DATA_EVENTS, emitDataChanged, subscribeDataChanged } from "../../utils/realtimeEvents";
 
-function StaffPage({ user, handleLogout }) {
+function StaffPage({ user, handleLogout, refreshUserProfile }) {
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -27,13 +27,13 @@ function StaffPage({ user, handleLogout }) {
   }, []);
 
   useEffect(() => {
-    if (user?.role === "staff") {
+    if (user?.role === "staff" || user?.role === "customer") {
       fetchStore();
     }
   }, [user, fetchStore]);
 
   useEffect(() => {
-    if (user?.role !== "staff") return undefined;
+    if (user?.role !== "staff" && user?.role !== "customer") return undefined;
 
     return subscribeDataChanged((event) => {
       if (event?.type === DATA_EVENTS.STORES) {
@@ -98,13 +98,13 @@ function StaffPage({ user, handleLogout }) {
     );
   }
 
-  if (user.role !== "staff") {
+  if (user.role !== "staff" && user.role !== "customer") {
     return (
       <div className="admin-page-wrapper home-page shopee-inspired">
         <AdminHeader user={user} onLogout={handleLogout} />
         <div className="error-screen admin-container">
           <h2>Truy cap bi tu choi</h2>
-          <p>Trang nay chi danh cho tai khoan staff.</p>
+          <p>Trang nay chi danh cho tai khoan staff hoac customer.</p>
           <button className="grant-btn" onClick={() => (window.location.href = "/home")}>
             Quay lai trang chu
           </button>
@@ -150,9 +150,12 @@ function StaffPage({ user, handleLogout }) {
               <button
                 className="revoke-btn"
                 style={{ marginTop: "30px", padding: "12px 30px" }}
-                onClick={() => fetchStore()}
+                onClick={() => {
+                  fetchStore();
+                  refreshUserProfile?.();
+                }}
               >
-                Kiem tra lai trang thai
+                Kiểm tra lại trạng thái
               </button>
             </div>
           ) : (

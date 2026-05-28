@@ -1,0 +1,207 @@
+.ecommerce-footer {
+  background-color: #fbfbfb;
+  border-top: 4px solid var(--shopee-red, #ee4d2d);
+  color: rgba(0, 0, 0, 0.65);
+  font-size: 0.8rem;
+  padding-top: 40px;
+  padding-bottom: 20px;
+  font-family: var(--font-main), sans-serif;
+}
+
+.footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.footer-main-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 30px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.footer-column h3 {
+  color: rgba(0, 0, 0, 0.87);
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.footer-links-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.footer-links-list li {
+  margin-bottom: 12px;
+}
+
+.footer-links-list a {
+  color: rgba(0, 0, 0, 0.54);
+  text-decoration: none;
+  transition: color 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-links-list a:hover {
+  color: var(--shopee-red, #ee4d2d);
+}
+
+/* Payment & Shipping grids */
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  max-width: 180px;
+  margin-bottom: 20px;
+}
+
+.icon-item {
+  background-color: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.09);
+  border-radius: 2px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 16 / 9;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.02);
+  transition: transform 0.2s ease;
+}
+
+.icon-item:hover {
+  transform: translateY(-2px);
+  border-color: var(--shopee-red, #ee4d2d);
+}
+
+.icon-item svg {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* Download section */
+.download-wrapper {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.qr-code-box {
+  background-color: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.09);
+  border-radius: 2px;
+  padding: 4px;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.02);
+}
+
+.qr-code-box svg {
+  width: 100%;
+  height: 100%;
+}
+
+.app-stores {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.store-badge {
+  background-color: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.09);
+  border-radius: 2px;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #222;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 0.65rem;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+}
+
+.store-badge:hover {
+  border-color: var(--shopee-red, #ee4d2d);
+  transform: translateX(2px);
+}
+
+/* Bottom copyright & information */
+.footer-bottom {
+  padding-top: 40px;
+  text-align: center;
+}
+
+.footer-meta-info {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 30px;
+  font-size: 0.75rem;
+  color: rgba(0, 0, 0, 0.54);
+}
+
+.footer-meta-info a {
+  text-decoration: none;
+  color: rgba(0, 0, 0, 0.54);
+}
+
+.footer-meta-info a:hover {
+  color: var(--shopee-red, #ee4d2d);
+}
+
+.registered-badge {
+  margin: 20px auto;
+  display: inline-block;
+  opacity: 0.85;
+  transition: opacity 0.2s;
+}
+
+.registered-badge:hover {
+  opacity: 1;
+}
+
+.footer-company-details {
+  font-size: 0.7rem;
+  color: rgba(0, 0, 0, 0.45);
+  line-height: 1.8;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.footer-copyright {
+  margin-top: 30px;
+  font-size: 0.75rem;
+  color: rgba(0, 0, 0, 0.54);
+  border-top: 1px solid #eee;
+  padding-top: 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .footer-main-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .footer-main-grid {
+    grid-template-columns: 1fr;
+  }
+  .download-wrapper {
+    flex-wrap: wrap;
+  }
+}

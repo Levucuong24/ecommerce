@@ -1,6 +1,7 @@
 const asyncHandler = require("../../middleware/asyncHandler");
 const sendResponse = require("../../utils/sendResponse");
 const authService = require("./auth.service");
+const generateToken = require("../../utils/generateToken");
 
 const register = asyncHandler(async (req, res) => {
     const { token, user } = await authService.registerUser(req.body);
@@ -14,7 +15,8 @@ const login = asyncHandler(async (req, res) => {
 
 const me = asyncHandler(async (req, res) => {
     const user = await authService.getCurrentUser(req.user.userId);
-    sendResponse(res, 200, "Get profile successful", { user });
+    const token = generateToken(user);
+    sendResponse(res, 200, "Get profile successful", { user, token });
 });
 
 const forgotPassword = asyncHandler(async (req, res) => {

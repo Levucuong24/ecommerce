@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const { Store, Product, Review } = require("../../models");
+const { Store, Product, Review, User } = require("../../models");
 const slugify = require("../../utils/slugify");
 const { deactivateExpiredFlashSales } = require("../product/product.service");
 
@@ -101,6 +101,13 @@ const approveStore = async (storeId, status) => {
 
   store.status = status;
   await store.save();
+
+  if (status === "active") {
+    await User.findByIdAndUpdate(store.ownerId, { role: "staff" });
+  } else if (status === "inactive") {
+    await User.findByIdAndUpdate(store.ownerId, { role: "customer" });
+  }
+
   return store;
 };
 

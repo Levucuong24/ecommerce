@@ -5,8 +5,8 @@ const authorize = require("../../middleware/roleMiddleware");
 
 const router = express.Router();
 
-router.post("/", protect, authorize("staff"), storeController.createStore);
-router.get("/my-store", protect, authorize("staff"), storeController.getMyStore);
+router.post("/", protect, storeController.createStore);
+router.get("/my-store", protect, storeController.getMyStore);
 router.patch("/my-store", protect, authorize("staff"), storeController.updateStore);
 router.get("/following", protect, storeController.getFollowingStores);
 router.patch("/online-status", protect, authorize("staff"), storeController.updateOnlineStatus);

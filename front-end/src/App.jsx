@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import AuthShell from "./features/auth/AuthShell";
 import LoginForm from "./features/auth/login/LoginForm";
@@ -48,6 +48,33 @@ function App() {
   const [messageType, setMessageType] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeChatStore, setActiveChatStore] = useState(null);
+
+  const refreshUserProfile = async () => {
+    const token = getAuthToken();
+    if (!token) return;
+
+    try {
+      const response = await fetch(`${apiUrl}/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.user && data.token) {
+          const remember = localStorage.getItem("auth_remember") === "true";
+          saveAuthSession(data.token, data.user, remember);
+          setUser(data.user);
+        }
+      }
+    } catch (err) {
+      console.error("Error refreshing user profile:", err);
+    }
+  };
+
+  useEffect(() => {
+    refreshUserProfile();
+  }, []);
 
   const clearMessage = () => {
     setMessage("");
@@ -447,8 +474,8 @@ function App() {
         <Route
           path="/staff"
           element={
-            user?.role === "staff" ? (
-              <StaffPage user={user} handleLogout={handleLogout} />
+            user && (user.role === "staff" || user.role === "customer") ? (
+              <StaffPage user={user} handleLogout={handleLogout} refreshUserProfile={refreshUserProfile} />
             ) : (
               <Navigate to={user ? getDefaultRouteByRole(user.role) : "/auth"} replace />
             )
