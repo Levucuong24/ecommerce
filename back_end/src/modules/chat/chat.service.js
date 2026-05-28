@@ -88,10 +88,21 @@ const getStoreConversations = async (userId) => {
     }
   }
 
+  const uniqueStoreIds = Array.from(new Set(Array.from(conversationMap.values()).map(c => c.storeId)));
+  const uniqueCustomerIds = Array.from(new Set(Array.from(conversationMap.values()).map(c => c.customerId)));
+
+  const [storesList, customersList] = await Promise.all([
+    Store.find({ _id: { $in: uniqueStoreIds } }).select("name logo"),
+    User.find({ _id: { $in: uniqueCustomerIds } }).select("name email avatar")
+  ]);
+
+  const storeMap = new Map(storesList.map(s => [s._id.toString(), s]));
+  const customerMap = new Map(customersList.map(c => [c._id.toString(), c]));
+
   const conversations = [];
   for (const conv of conversationMap.values()) {
-    const store = await Store.findById(conv.storeId).select("name logo");
-    const customer = await User.findById(conv.customerId).select("name email avatar");
+    const store = storeMap.get(conv.storeId.toString());
+    const customer = customerMap.get(conv.customerId.toString());
     if (customer && store) {
       conversations.push({
         ...conv,
@@ -132,9 +143,13 @@ const getUserConversations = async (userId) => {
     }
   }
 
+  const uniqueStoreIds = Array.from(new Set(Array.from(conversationMap.values()).map(c => c.storeId)));
+  const storesList = await Store.find({ _id: { $in: uniqueStoreIds } }).select("name logo ownerId");
+  const storeMap = new Map(storesList.map(s => [s._id.toString(), s]));
+
   const conversations = [];
   for (const conv of conversationMap.values()) {
-    const store = await Store.findById(conv.storeId).select("name logo ownerId");
+    const store = storeMap.get(conv.storeId.toString());
     if (store) {
       conversations.push({
         ...conv,

@@ -29,15 +29,24 @@ const createReview = async (userId, data) => {
     createdAt: new Date(),
   });
 
-  const productReviews = await Review.find({ productId });
-  const totalReviews = productReviews.length;
-  const averageRating =
-    productReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews;
+  const stats = await Review.aggregate([
+    { $match: { productId: new mongoose.Types.ObjectId(String(productId)) } },
+    {
+      $group: {
+        _id: "$productId",
+        ratingCount: { $sum: 1 },
+        ratingAverage: { $avg: "$rating" }
+      }
+    }
+  ]);
 
-  await Product.findByIdAndUpdate(productId, {
-    ratingAverage: averageRating.toFixed(1),
-    ratingCount: totalReviews,
-  });
+  if (stats.length > 0) {
+    const { ratingCount, ratingAverage } = stats[0];
+    await Product.findByIdAndUpdate(productId, {
+      ratingAverage: Number(ratingAverage.toFixed(1)),
+      ratingCount,
+    });
+  }
 
   return review;
 };
