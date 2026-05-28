@@ -57,6 +57,8 @@ const getProductById = async (id) => {
         ])
       ]);
 
+      const isOnline = store.isOnline && (new Date() - new Date(store.lastActive || store.createdAt) <= 60000);
+
       shopData = {
         _id: store._id,
         name: store.name,
@@ -67,7 +69,7 @@ const getProductById = async (id) => {
         totalProducts,
         totalRatings: stats[0]?.totalRatings || 0,
         avgRating: stats[0]?.avgRating || 0,
-        isOnline: store.isOnline || false,
+        isOnline,
         lastActive: store.lastActive || store.createdAt,
         responseTime: "trong vài giờ",
         responseRate: "99%",

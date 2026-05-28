@@ -163,6 +163,8 @@ const forgotPassword = async (email) => {
 
   user.resetPasswordToken = otp;
   user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
+  user.otpAttempts = 0;
+  user.otpLockUntil = null;
   await user.save();
 
   const messageHtml = `
@@ -203,11 +205,7 @@ const resetPassword = async (email, otp, newPassword) => {
     throw error;
   }
 
-  const user = await User.findOne({
-    email,
-    resetPasswordToken: otp,
-    resetPasswordExpires: { $gt: Date.now() },
-  });
+  const user = await User.findOne({ email });
 
   if (!user) {
     const error = new Error("Mã OTP không hợp lệ hoặc đã hết hạn");
@@ -215,9 +213,47 @@ const resetPassword = async (email, otp, newPassword) => {
     throw error;
   }
 
+  // 1. Kiểm tra trạng thái khóa tạm thời
+  if (user.otpLockUntil && user.otpLockUntil > Date.now()) {
+    const minutesLeft = Math.ceil((new Date(user.otpLockUntil) - Date.now()) / 60000);
+    const error = new Error(`Tài khoản đang bị khóa tạm thời. Vui lòng thử lại sau ${minutesLeft} phút.`);
+    error.statusCode = 423; // Locked
+    throw error;
+  }
+
+  // 2. Kiểm tra OTP có được tạo chưa và còn hạn không
+  if (!user.resetPasswordToken || !user.resetPasswordExpires || user.resetPasswordExpires <= Date.now()) {
+    const error = new Error("Mã OTP không hợp lệ hoặc đã hết hạn");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  // 3. So sánh nghiêm ngặt kiểu dữ liệu chuỗi để chặn NoSQL Injection
+  if (user.resetPasswordToken !== String(otp).trim()) {
+    user.otpAttempts = (user.otpAttempts || 0) + 1;
+    
+    if (user.otpAttempts >= 5) {
+      user.otpLockUntil = new Date(Date.now() + 15 * 60 * 1000); // Khóa trong 15 phút
+      user.otpAttempts = 0;
+      await user.save();
+      
+      const error = new Error("Nhập sai mã OTP quá nhiều lần. Tài khoản của bạn đã bị khóa tạm thời 15 phút.");
+      error.statusCode = 423; // Locked
+      throw error;
+    }
+    
+    await user.save();
+    const error = new Error("Mã OTP không chính xác");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  // 4. Đổi mật khẩu thành công: đặt lại trạng thái OTP
   user.password = await bcrypt.hash(newPassword, 10);
   user.resetPasswordToken = undefined;
   user.resetPasswordExpires = undefined;
+  user.otpAttempts = 0;
+  user.otpLockUntil = null;
   await user.save();
 
   return { success: true };

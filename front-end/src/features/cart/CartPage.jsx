@@ -75,6 +75,58 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
     setSavedVoucherIds(saved);
   }, []);
 
+  useEffect(() => {
+    const syncMockVouchers = async () => {
+      if (!user) return;
+      try {
+        const response = await fetch(`${apiUrl}/orders/my`, {
+          headers: {
+            Authorization: `Bearer ${getAuthToken()}`,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const saved = JSON.parse(localStorage.getItem("savedVouchers") || "[]");
+          let updated = [...saved];
+          let changed = false;
+          
+          // 1. Remove mock vouchers that are used in active orders (pending, processing, completed)
+          const activeUsedMockVouchers = data
+            .filter(o => o.orderStatus !== "cancelled")
+            .map(o => o.voucherId)
+            .filter(vid => vid && vid.startsWith('v'));
+            
+          const beforeLen = updated.length;
+          updated = updated.filter(vid => !activeUsedMockVouchers.includes(vid));
+          if (updated.length !== beforeLen) {
+            changed = true;
+          }
+
+          // 2. Restore mock vouchers that were used in cancelled orders (and are not used in any active orders)
+          const cancelledMockVouchers = data
+            .filter(o => o.orderStatus === "cancelled")
+            .map(o => o.voucherId)
+            .filter(vid => vid && vid.startsWith('v'));
+
+          for (const vid of cancelledMockVouchers) {
+            if (!activeUsedMockVouchers.includes(vid) && !updated.includes(vid)) {
+              updated.push(vid);
+              changed = true;
+            }
+          }
+
+          if (changed) {
+            localStorage.setItem("savedVouchers", JSON.stringify(updated));
+            setSavedVoucherIds(updated);
+          }
+        }
+      } catch (err) {
+        console.error("Error syncing mock vouchers:", err);
+      }
+    };
+    syncMockVouchers();
+  }, [user]);
+
   const fetchCart = useCallback(async () => {
     if (!user) {
       setLoading(false);

@@ -3,6 +3,19 @@ const { Store, Product, Review } = require("../../models");
 const slugify = require("../../utils/slugify");
 const { deactivateExpiredFlashSales } = require("../product/product.service");
 
+const checkOnlineStatus = (store) => {
+  if (!store) return store;
+  if (store.isOnline) {
+    const lastActive = store.lastActive || store.createdAt;
+    const diff = new Date() - new Date(lastActive);
+    if (diff > 60000) { // 60 seconds threshold
+      store.isOnline = false;
+    }
+  }
+  return store;
+};
+
+
 const createStore = async (userId, storeData) => {
   // Check if user already has a store
   const existingStore = await Store.findOne({ ownerId: userId });
@@ -29,7 +42,7 @@ const getMyStore = async (userId) => {
   if (!store) {
     return null;
   }
-  return store;
+  return checkOnlineStatus(store);
 };
 
 const getStoreById = async (storeId) => {
@@ -39,7 +52,7 @@ const getStoreById = async (storeId) => {
     error.statusCode = 404;
     throw error;
   }
-  return store;
+  return checkOnlineStatus(store);
 };
 
 const getStoreProducts = async (storeId) => {
@@ -74,7 +87,8 @@ const updateStore = async (userId, storeData) => {
 };
 
 const getAllStores = async (query) => {
-  return await Store.find(query).populate("ownerId", "name email");
+  const stores = await Store.find(query).populate("ownerId", "name email");
+  return stores.map(checkOnlineStatus);
 };
 
 const approveStore = async (storeId, status) => {

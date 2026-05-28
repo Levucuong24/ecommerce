@@ -225,7 +225,7 @@ function ShopPage({ onOpenLogin, onOpenCart, user, onLogout, onChatWithStore }) 
                   <div className="shop-online-status">
                     <span className={`status-dot ${shop.isOnline ? 'online' : 'offline'}`}></span>
                     {shop.isOnline ? "Online" : (() => {
-                      const lastActive = shop.lastActiveAt || shop.updatedAt;
+                      const lastActive = shop.lastActive || shop.createdAt;
                       if (lastActive) {
                         const minutes = Math.floor((new Date() - new Date(lastActive)) / 60000);
                         if (minutes < 1) return "Vừa hoạt động";

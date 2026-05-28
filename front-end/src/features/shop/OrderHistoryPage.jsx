@@ -28,6 +28,40 @@ function OrderHistoryPage({ user, onLogout, onOpenLogin, onOpenCart }) {
         const data = await response.json();
         const activeOrders = data.filter(order => order.orderStatus !== "cancelled");
         setOrders(activeOrders);
+
+        // Sync mock vouchers
+        const saved = JSON.parse(localStorage.getItem("savedVouchers") || "[]");
+        let updated = [...saved];
+        let changed = false;
+        
+        // 1. Remove mock vouchers that are used in active orders (pending, processing, completed)
+        const activeUsedMockVouchers = data
+          .filter(o => o.orderStatus !== "cancelled")
+          .map(o => o.voucherId)
+          .filter(vid => vid && vid.startsWith('v'));
+          
+        const beforeLen = updated.length;
+        updated = updated.filter(vid => !activeUsedMockVouchers.includes(vid));
+        if (updated.length !== beforeLen) {
+          changed = true;
+        }
+
+        // 2. Restore mock vouchers that were used in cancelled orders (and are not used in any active orders)
+        const cancelledMockVouchers = data
+          .filter(o => o.orderStatus === "cancelled")
+          .map(o => o.voucherId)
+          .filter(vid => vid && vid.startsWith('v'));
+
+        for (const vid of cancelledMockVouchers) {
+          if (!activeUsedMockVouchers.includes(vid) && !updated.includes(vid)) {
+            updated.push(vid);
+            changed = true;
+          }
+        }
+
+        if (changed) {
+          localStorage.setItem("savedVouchers", JSON.stringify(updated));
+        }
       }
     } catch (error) {
       console.error("Lỗi khi tải lịch sử đơn hàng:", error);

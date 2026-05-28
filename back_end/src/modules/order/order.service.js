@@ -200,6 +200,7 @@ const createOrder = async (userId, addressSnapshot, paymentMethod, selectedVouch
       commissionRate,
       commissionAmount,
       storeRevenue,
+      voucherId: selectedVoucherId || null,
       createdAt: new Date(),
     });
 
@@ -256,6 +257,27 @@ const updateOrderStatus = async (orderId, userId, role, status) => {
         }
         product.soldCount = Math.max(0, (product.soldCount || 0) - item.quantity);
         await product.save();
+      }
+    }
+
+    // Restore DB Coupon usage if applicable
+    if (order.voucherId && mongoose.Types.ObjectId.isValid(order.voucherId)) {
+      // Check if there are any other active orders (not cancelled) using the same voucherId
+      const otherActiveOrder = await Order.findOne({
+        _id: { $ne: order._id },
+        voucherId: order.voucherId,
+        orderStatus: { $ne: "cancelled" }
+      });
+      
+      if (!otherActiveOrder) {
+        const coupon = await Coupon.findById(order.voucherId);
+        if (coupon) {
+          if (coupon.maxUsage !== undefined && coupon.maxUsage !== null) {
+            coupon.maxUsage += 1;
+          }
+          coupon.isActive = true;
+          await coupon.save();
+        }
       }
     }
   }

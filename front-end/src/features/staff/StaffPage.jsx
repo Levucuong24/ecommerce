@@ -44,7 +44,7 @@ function StaffPage({ user, handleLogout }) {
 
   useEffect(() => {
     if (user?.role === "staff") {
-      const updateStatus = async (isOnline) => {
+      const updateStatus = async (isOnline, emit = true) => {
         try {
           const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
           await fetch(`${apiUrl}/stores/online-status`, {
@@ -57,18 +57,27 @@ function StaffPage({ user, handleLogout }) {
             keepalive: true,
           });
           
-          // Phát sự kiện để các tab khác (ví dụ: trang sản phẩm) biết Shop đã online
-          emitDataChanged(DATA_EVENTS.STORES, { isOnline });
+          if (emit) {
+            // Phát sự kiện để các tab khác (ví dụ: trang sản phẩm) biết Shop đã online
+            emitDataChanged(DATA_EVENTS.STORES, { isOnline });
+          }
         } catch (err) {
           console.error("Error updating online status:", err);
         }
       };
 
-      updateStatus(true);
+      // Set online status initially
+      updateStatus(true, true);
+
+      // Heartbeat ping every 30 seconds to update lastActive
+      const interval = setInterval(() => {
+        updateStatus(true, false);
+      }, 30000);
       
       // Update status to offline when leaving the page
       return () => {
-        updateStatus(false);
+        clearInterval(interval);
+        updateStatus(false, true);
       };
     }
     return undefined;
