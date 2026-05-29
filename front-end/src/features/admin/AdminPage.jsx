@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import AdminHeader from "./components/AdminHeader";
+import AnalyticsChart from "../../components/AnalyticsChart";
 import { getAuthToken } from "../../utils/authStorage";
 import { DATA_EVENTS, emitDataChanged, subscribeDataChanged } from "../../utils/realtimeEvents";
 
@@ -641,6 +642,8 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
                       <div style={{ fontSize: "12px", color: "#0284c7", marginTop: "5px" }}>Tiền chuyển cho các chủ Shop (Staff)</div>
                     </div>
                   </div>
+
+                  <AnalyticsChart orders={orders} type="admin" />
 
                   {/* Projected Revenues */}
                   <div style={{ background: "#fffbeb", padding: "20px", borderRadius: "8px", border: "1px solid #fef3c7" }}>

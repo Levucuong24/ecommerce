@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import AddProductForm from "./AddProductForm";
+import AnalyticsChart from "../../../components/AnalyticsChart";
 import { DATA_EVENTS, emitDataChanged, subscribeDataChanged } from "../../../utils/realtimeEvents";
 import { getAuthToken } from "../../../utils/authStorage";
 
@@ -670,6 +671,8 @@ function StoreDashboard({ store, token, onStoreUpdate }) {
                     <div style={{ fontSize: "12px", color: "#065f46", marginTop: "5px" }}>Tổng tiền sau chiết khấu</div>
                   </div>
                 </div>
+
+                <AnalyticsChart orders={orders} type="store" />
 
                 {/* Pending Section */}
                 <div style={{ background: "#f8fafc", padding: "20px", borderRadius: "8px", border: "1px solid #e2e8f0", marginBottom: "30px" }}>
