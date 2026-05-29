@@ -1,12 +1,13 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const { OAuth2Client } = require("google-auth-library");
+const config = require("../../config/env");
 
 const { User, Coupon } = require("../../models");
 const generateToken = require("../../utils/generateToken");
 const sendEmail = require("../../utils/sendEmail");
 
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const googleClient = new OAuth2Client(config.google.clientId);
 
 const sanitizeUser = (user) => {
   if (!user) return null;
@@ -268,7 +269,7 @@ const googleLogin = async (credential) => {
 
   const ticket = await googleClient.verifyIdToken({
     idToken: credential,
-    audience: process.env.GOOGLE_CLIENT_ID,
+    audience: config.google.clientId,
   });
 
   const payload = ticket.getPayload();

@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 
+const config = require("./config/env");
 const apiRouter = require("./routes");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 
@@ -8,7 +9,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "*",
+    origin: config.clientUrl,
     credentials: true,
   })
 );

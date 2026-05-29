@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const config = require("../config/env");
 
 const extractToken = (authorizationHeader = "") => {
   if (!authorizationHeader.startsWith("Bearer ")) {
@@ -18,7 +19,7 @@ const protect = (req, res, next) => {
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, config.jwtSecret);
     req.user = decoded;
     req.user.id = decoded.userId; // Normalize id
     next();

@@ -1,10 +1,10 @@
-require("dotenv").config({ path: require("path").resolve(__dirname, "../../.env") });
+const config = require("../config/env");
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const Product = require("../models/product.model");
 const User = require("../models/user.model");
 
-const MONGO_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/ecommerceDB";
+const MONGO_URI = config.mongodbUri;
 
 async function seed() {
   try {

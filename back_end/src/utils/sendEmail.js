@@ -1,18 +1,19 @@
 const nodemailer = require("nodemailer");
+const config = require("../config/env");
 
 const sendEmail = async ({ to, subject, html }) => {
   const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT,
+    host: config.smtp.host,
+    port: config.smtp.port,
     secure: true, // true for 465, false for other ports
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      user: config.smtp.user,
+      pass: config.smtp.pass,
     },
   });
 
   const mailOptions = {
-    from: `"Ecommerce Admin" <${process.env.SMTP_USER}>`,
+    from: `"Ecommerce Admin" <${config.smtp.user}>`,
     to,
     subject,
     html,
