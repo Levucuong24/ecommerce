@@ -12,9 +12,11 @@ const AdminHeader = ({ user, onLogout }) => {
             <div className="user-dropdown-wrapper">
               <span className="shop-login-link" style={{ cursor: 'pointer', color: '#fff' }}>Hi, {user.name}</span>
               <div className="user-dropdown-popup">
-                <button type="button" onClick={() => window.location.href = "/home"} className="admin-dash-btn">
-                  Quay lại trang chủ
-                </button>
+                {user?.role !== "admin" && (
+                  <button type="button" onClick={() => window.location.href = "/home"} className="admin-dash-btn">
+                    Quay lại trang chủ
+                  </button>
+                )}
                 <button type="button" onClick={onLogout} className="logout-btn">
                   Đăng xuất
                 </button>
