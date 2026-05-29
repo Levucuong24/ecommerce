@@ -92,6 +92,9 @@ const createOrder = async (userId, addressSnapshot, paymentMethod, selectedVouch
 
   // Apply Voucher if present
   let overallDiscount = 0;
+  let storeVoucherStoreId = null;
+  let storeVoucherDiscountVal = 0;
+
   if (selectedVoucherId) {
     let coupon = null;
     
@@ -117,29 +120,96 @@ const createOrder = async (userId, addressSnapshot, paymentMethod, selectedVouch
       const isActive = isDbCoupon ? coupon.isActive : true;
       
       if (isActive && !isExpired) {
-        if (overallSubtotal >= coupon.minOrder) {
-          const type = coupon.type || (coupon.discountType === "percentage" ? "percent" : "fixed");
-          const val = coupon.value || coupon.discountPercent || coupon.discountAmount || 0;
-          
-          if (type === "percentage" || type === "percent") {
-            overallDiscount = (overallSubtotal * val) / 100;
-          } else {
-            overallDiscount = val;
-          }
-          
-          if (overallDiscount > overallSubtotal) {
-            overallDiscount = overallSubtotal;
+        if (isDbCoupon && coupon.storeId) {
+          // 1. Check if the user follows the shop
+          const store = await Store.findById(coupon.storeId);
+          if (!store || !store.followers || !store.followers.some(fid => fid.toString() === userId.toString())) {
+            const error = new Error("Bạn phải theo dõi cửa hàng để sử dụng mã giảm giá này");
+            error.statusCode = 400;
+            throw error;
           }
 
-          // Update DB Coupon usage
-          if (isDbCoupon) {
-            if (coupon.maxUsage !== undefined && coupon.maxUsage !== null) {
-              coupon.maxUsage = Math.max(0, coupon.maxUsage - 1);
-              if (coupon.maxUsage === 0) {
-                coupon.isActive = false;
-              }
+          // 2. Check user usage count
+          const usageCount = coupon.usedBy ? coupon.usedBy.filter(id => id.toString() === userId.toString()).length : 0;
+          const userLimit = coupon.limitPerUser || 1;
+          if (usageCount >= userLimit) {
+            const error = new Error("Bạn đã sử dụng hết lượt dùng cho mã giảm giá này");
+            error.statusCode = 400;
+            throw error;
+          }
+
+          // 3. Check store-specific subtotal
+          const targetStoreId = coupon.storeId.toString();
+          const storeSubtotal = storeSubtotals[targetStoreId] || 0;
+          if (storeSubtotal < coupon.minOrder) {
+            const error = new Error(`Tổng giá trị sản phẩm của shop chưa đạt mức tối thiểu ${coupon.minOrder.toLocaleString("vi-VN")}đ`);
+            error.statusCode = 400;
+            throw error;
+          }
+
+          // 4. Calculate discount
+          const type = coupon.type || (coupon.discountType === "percentage" ? "percent" : "fixed");
+          const val = coupon.value || coupon.discountPercent || coupon.discountAmount || 0;
+          let storeVoucherDiscount = 0;
+          if (type === "percentage" || type === "percent") {
+            storeVoucherDiscount = (storeSubtotal * val) / 100;
+          } else {
+            storeVoucherDiscount = val;
+          }
+          if (storeVoucherDiscount > storeSubtotal) {
+            storeVoucherDiscount = storeSubtotal;
+          }
+
+          storeVoucherStoreId = targetStoreId;
+          storeVoucherDiscountVal = Math.round(storeVoucherDiscount);
+
+          // 5. Update DB Coupon usage
+          if (coupon.maxUsage !== undefined && coupon.maxUsage !== null) {
+            coupon.maxUsage = Math.max(0, coupon.maxUsage - 1);
+            if (coupon.maxUsage === 0) {
+              coupon.isActive = false;
             }
-            await coupon.save();
+          }
+          if (!coupon.usedBy) coupon.usedBy = [];
+          coupon.usedBy.push(userId);
+          await coupon.save();
+        } else {
+          // Platform-wide / general coupon
+          if (overallSubtotal >= coupon.minOrder) {
+            const type = coupon.type || (coupon.discountType === "percentage" ? "percent" : "fixed");
+            const val = coupon.value || coupon.discountPercent || coupon.discountAmount || 0;
+            
+            if (type === "percentage" || type === "percent") {
+              overallDiscount = (overallSubtotal * val) / 100;
+            } else {
+              overallDiscount = val;
+            }
+            
+            if (overallDiscount > overallSubtotal) {
+              overallDiscount = overallSubtotal;
+            }
+
+            // Update DB Coupon usage
+            if (isDbCoupon) {
+              // Also check user limit for general coupons if defined
+              const usageCount = coupon.usedBy ? coupon.usedBy.filter(id => id.toString() === userId.toString()).length : 0;
+              const userLimit = coupon.limitPerUser || 1;
+              if (usageCount >= userLimit) {
+                const error = new Error("Bạn đã sử dụng hết lượt dùng cho mã giảm giá này");
+                error.statusCode = 400;
+                throw error;
+              }
+
+              if (coupon.maxUsage !== undefined && coupon.maxUsage !== null) {
+                coupon.maxUsage = Math.max(0, coupon.maxUsage - 1);
+                if (coupon.maxUsage === 0) {
+                  coupon.isActive = false;
+                }
+              }
+              if (!coupon.usedBy) coupon.usedBy = [];
+              coupon.usedBy.push(userId);
+              await coupon.save();
+            }
           }
         }
       }
@@ -151,8 +221,15 @@ const createOrder = async (userId, addressSnapshot, paymentMethod, selectedVouch
   // Create orders split by store
   for (const storeId in storeGroups) {
     const storeSubtotal = storeSubtotals[storeId];
-    // Split discount proportionally
-    const storeDiscount = overallSubtotal > 0 ? (overallDiscount * storeSubtotal) / overallSubtotal : 0;
+    // Split discount proportionally or apply store-specific voucher discount
+    let storeDiscount = 0;
+    if (storeVoucherStoreId) {
+      if (storeVoucherStoreId === storeId) {
+        storeDiscount = storeVoucherDiscountVal;
+      }
+    } else {
+      storeDiscount = overallSubtotal > 0 ? (overallDiscount * storeSubtotal) / overallSubtotal : 0;
+    }
     const storeTotalPrice = Math.max(0, Math.round(storeSubtotal - storeDiscount));
 
     // Admin takes 5% commission from staff's sales
@@ -274,6 +351,12 @@ const updateOrderStatus = async (orderId, userId, role, status) => {
         if (coupon) {
           if (coupon.maxUsage !== undefined && coupon.maxUsage !== null) {
             coupon.maxUsage += 1;
+          }
+          if (coupon.usedBy) {
+            const idx = coupon.usedBy.findIndex(id => id.toString() === order.userId.toString());
+            if (idx !== -1) {
+              coupon.usedBy.splice(idx, 1);
+            }
           }
           coupon.isActive = true;
           await coupon.save();

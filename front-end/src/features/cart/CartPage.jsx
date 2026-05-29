@@ -23,6 +23,7 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
   const [phone, setPhone] = useState(user?.phone || "");
   const [addressDetail, setAddressDetail] = useState("");
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
+  const [showVoucherModal, setShowVoucherModal] = useState(false);
 
   const handleCheckout = async () => {
     if (!fullName.trim() || !phone.trim() || !addressDetail.trim()) {
@@ -154,11 +155,19 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
   }, [fetchCart]);
 
   const fetchCoupons = useCallback(async () => {
+    if (!user) return;
     try {
-      const url = user 
-        ? `${apiUrl}/coupons?userId=${user._id || user.id}`
-        : `${apiUrl}/coupons`;
-      const response = await fetch(url);
+      const storeIds = cart?.items
+        ? [...new Set(cart.items.map(item => item.productId?.storeId).filter(id => !!id))]
+        : [];
+      
+      const token = getAuthToken();
+      const url = `${apiUrl}/coupons/applicable?storeIds=${storeIds.join(",")}`;
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data.items)) {
@@ -168,7 +177,26 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
     } catch (error) {
       console.error("Lỗi khi tải coupon:", error);
     }
-  }, [user]);
+  }, [user, cart]);
+
+  const handleFollowStore = async (storeId) => {
+    try {
+      const response = await fetch(`${apiUrl}/stores/${storeId}/follow`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+      });
+      if (response.ok) {
+        alert("Đã theo dõi cửa hàng thành công!");
+        fetchCoupons(); // Refresh coupons to update follow status!
+      } else {
+        alert("Không thể theo dõi cửa hàng lúc này");
+      }
+    } catch (error) {
+      console.error("Lỗi khi theo dõi cửa hàng:", error);
+    }
+  };
 
   useEffect(() => {
     fetchCoupons();
@@ -276,16 +304,51 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
 
   const calculateDiscount = (subtotal) => {
     if (!selectedVoucher) return 0;
-    const minOrder = selectedVoucher.minOrder || 0;
-    if (subtotal < minOrder) return 0;
+    
+    // Check if it's store-specific
+    if (selectedVoucher.storeId) {
+      const storeObj = selectedVoucher.storeId;
+      const storeIdStr = (storeObj._id || storeObj).toString();
+      const storeSubtotal = cart?.items
+        ? cart.items
+            .filter(item => {
+              const itemStoreId = item.productId?.storeId;
+              const itemStoreIdStr = (itemStoreId?._id || itemStoreId || "").toString();
+              return itemStoreIdStr === storeIdStr;
+            })
+            .reduce((sum, item) => {
+              const priceInfo = getItemPriceInfo(item);
+              const price = priceInfo.discountPrice || priceInfo.price || 0;
+              return sum + price * item.quantity;
+            }, 0)
+        : 0;
 
-    const type = selectedVoucher.type || (selectedVoucher.discountType === 'percentage' ? 'percent' : 'fixed');
-    const value = selectedVoucher.value || selectedVoucher.discountPercent || selectedVoucher.discountAmount || 0;
+      const minOrder = selectedVoucher.minOrder || 0;
+      if (storeSubtotal < minOrder) return 0;
 
-    if (type === 'percent') {
-      return (subtotal * value) / 100;
-    } else if (type === 'fixed') {
-      return value;
+      const type = selectedVoucher.discountType === 'percentage' ? 'percent' : 'fixed';
+      const value = selectedVoucher.value || 0;
+
+      if (type === 'percent') {
+        const discountAmount = (storeSubtotal * value) / 100;
+        return discountAmount > storeSubtotal ? storeSubtotal : discountAmount;
+      } else if (type === 'fixed') {
+        return value > storeSubtotal ? storeSubtotal : value;
+      }
+    } else {
+      // Platform voucher
+      const minOrder = selectedVoucher.minOrder || 0;
+      if (subtotal < minOrder) return 0;
+
+      const type = selectedVoucher.type || (selectedVoucher.discountType === 'percentage' ? 'percent' : 'fixed');
+      const value = selectedVoucher.value || selectedVoucher.discountPercent || selectedVoucher.discountAmount || 0;
+
+      if (type === 'percent') {
+        const discountAmount = (subtotal * value) / 100;
+        return discountAmount > subtotal ? subtotal : discountAmount;
+      } else if (type === 'fixed') {
+        return value > subtotal ? subtotal : value;
+      }
     }
     return 0;
   };
@@ -448,35 +511,28 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
               
               {(savedVoucherIds.length > 0 || apiCoupons.length > 0) && (
                 <div style={{ marginBottom: "20px", paddingBottom: "20px", borderBottom: "1px dashed #eee" }}>
-                  <label style={{ display: "block", marginBottom: "10px", fontWeight: "500", fontSize: "14px" }}>Chọn Voucher của bạn:</label>
-                  <select 
-                    value={selectedVoucherId} 
-                    onChange={(e) => setSelectedVoucherId(e.target.value)}
-                    style={{ width: "100%", padding: "10px", borderRadius: "4px", border: "1px solid #ddd", background: "#f9f9f9", outline: "none" }}
+                  <span style={{ display: "block", marginBottom: "10px", fontWeight: "500", fontSize: "14px" }}>Voucher của bạn</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowVoucherModal(true)}
+                    style={{
+                      width: "100%",
+                      padding: "10px 14px",
+                      borderRadius: "6px",
+                      border: "1px solid var(--primary)",
+                      color: "var(--primary)",
+                      background: "var(--primary-light, #fff5f5)",
+                      fontWeight: "600",
+                      fontSize: "14px",
+                      cursor: "pointer",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center"
+                    }}
                   >
-                    <option value="">Không chọn</option>
-                    {/* Mock Vouchers */}
-                    {savedVoucherIds.map(vid => {
-                      const v = mockVouchers.find(mv => mv.id === vid);
-                      if (!v) return null;
-                      const isEligible = subtotal >= v.minOrder;
-                      return (
-                        <option key={vid} value={vid} disabled={!isEligible}>
-                          {v.title} {isEligible ? "" : `(Cần mua thêm ${formatPrice(v.minOrder - subtotal)}đ)`}
-                        </option>
-                      );
-                    })}
-                    {/* API Coupons (Auto-assigned like WELCOME) */}
-                    {apiCoupons.filter(v => v.isActive !== false && (!v.expiredAt || new Date(v.expiredAt) > new Date())).map(v => {
-                      const isEligible = subtotal >= (v.minOrder || 0);
-                      const displayTitle = v.code.startsWith('WELCOME-') ? `Voucher người mới (${v.code})` : v.code;
-                      return (
-                        <option key={v._id} value={v._id} disabled={!isEligible}>
-                          {displayTitle} (Giảm {v.value}{v.discountType === 'percentage' ? '%' : 'đ'}) {isEligible ? "" : `(Cần mua thêm ${formatPrice((v.minOrder || 0) - subtotal)}đ)`}
-                        </option>
-                      );
-                    })}
-                  </select>
+                    <span>{selectedVoucher ? `Đã chọn: ${selectedVoucher.code || selectedVoucher.title}` : "Chọn hoặc nhập mã Voucher"}</span>
+                    <span>&gt;</span>
+                  </button>
                 </div>
               )}
 
@@ -535,6 +591,264 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
           </div>
         )}
       </section>
+
+      {showVoucherModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+          onClick={() => setShowVoucherModal(false)}
+        >
+          <div
+            style={{
+              background: "white",
+              padding: "24px 30px",
+              borderRadius: "12px",
+              maxWidth: "500px",
+              width: "90%",
+              boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+              maxHeight: "80vh",
+              display: "flex",
+              flexDirection: "column"
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9", paddingBottom: "15px", marginBottom: "20px" }}>
+              <h3 style={{ margin: 0, fontSize: "18px", color: "#1e293b" }}>Chọn Shopee Voucher</h3>
+              <button
+                onClick={() => setShowVoucherModal(false)}
+                style={{ background: "none", border: "none", fontSize: "20px", color: "#94a3b8", cursor: "pointer" }}
+              >
+                &times;
+              </button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: "auto", paddingRight: "5px" }}>
+              {/* Platform Mock Vouchers */}
+              <h4 style={{ margin: "0 0 10px 0", fontSize: "14px", color: "#64748b" }}>Ưu đãi từ Shopee</h4>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "25px" }}>
+                {savedVoucherIds.map(vid => {
+                  const v = mockVouchers.find(mv => mv.id === vid);
+                  if (!v) return null;
+                  const isEligible = subtotal >= v.minOrder;
+                  const isSelected = selectedVoucherId === vid;
+
+                  return (
+                    <div
+                      key={vid}
+                      style={{
+                        display: "flex",
+                        border: isSelected ? "1px solid var(--primary)" : "1px solid #e2e8f0",
+                        borderRadius: "8px",
+                        overflow: "hidden",
+                        opacity: isEligible ? 1 : 0.6,
+                        background: isSelected ? "#fff5f5" : "white"
+                      }}
+                    >
+                      {/* Left color bar */}
+                      <div style={{ width: "80px", background: "var(--primary)", color: "white", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "10px", textAlign: "center" }}>
+                        <span style={{ fontSize: "20px" }}>🎟️</span>
+                        <span style={{ fontSize: "10px", fontWeight: "bold", marginTop: "4px" }}>Platform</span>
+                      </div>
+                      
+                      {/* Content */}
+                      <div style={{ flex: 1, padding: "12px 16px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                        <div>
+                          <div style={{ fontWeight: "bold", fontSize: "14px", color: "#1e293b" }}>{v.title}</div>
+                          <div style={{ fontSize: "12px", color: "#64748b", marginTop: "4px" }}>
+                            Đơn tối thiểu {formatPrice(v.minOrder)}đ
+                          </div>
+                        </div>
+                        {!isEligible && (
+                          <div style={{ fontSize: "11px", color: "var(--primary)", marginTop: "4px" }}>
+                            Cần mua thêm {formatPrice(v.minOrder - subtotal)}đ
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action */}
+                      <div style={{ display: "flex", alignItems: "center", paddingRight: "16px" }}>
+                        <button
+                          disabled={!isEligible}
+                          onClick={() => {
+                            setSelectedVoucherId(isSelected ? "" : vid);
+                            setShowVoucherModal(false);
+                          }}
+                          style={{
+                            padding: "6px 12px",
+                            borderRadius: "4px",
+                            border: "none",
+                            background: isSelected ? "#64748b" : (isEligible ? "var(--primary)" : "#cbd5e1"),
+                            color: "white",
+                            fontSize: "12px",
+                            fontWeight: "600",
+                            cursor: isEligible ? "pointer" : "not-allowed"
+                          }}
+                        >
+                          {isSelected ? "Bỏ chọn" : "Dùng ngay"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Shop Specific Coupons */}
+              <h4 style={{ margin: "0 0 10px 0", fontSize: "14px", color: "#64748b" }}>Voucher từ Người bán</h4>
+              {apiCoupons.length === 0 ? (
+                <div style={{ fontSize: "13px", color: "#94a3b8", textAlign: "center", padding: "10px" }}>Chưa có voucher của Shop nào khả dụng</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {apiCoupons.filter(v => v.isActive !== false && (!v.expiredAt || new Date(v.expiredAt) > new Date())).map(v => {
+                    const isStoreCoupon = !!v.storeId;
+                    const storeObj = v.storeId || {};
+                    const storeName = storeObj.name || "Cửa hàng";
+                    
+                    // Check subtotal of the specific store
+                    const storeSubtotal = cart?.items
+                      ? cart.items
+                          .filter(item => {
+                            const itemStoreId = item.productId?.storeId;
+                            const itemStoreIdStr = (itemStoreId?._id || itemStoreId || "").toString();
+                            const storeIdStr = (storeObj._id || storeObj || "").toString();
+                            return itemStoreIdStr === storeIdStr;
+                          })
+                          .reduce((sum, item) => {
+                            const priceInfo = getItemPriceInfo(item);
+                            const price = priceInfo.discountPrice || priceInfo.price || 0;
+                            return sum + price * item.quantity;
+                          }, 0)
+                      : 0;
+
+                    const isEligibleOrder = storeSubtotal >= (v.minOrder || 0);
+
+                    // Check if followed
+                    const userIdStr = user?._id || user?.id;
+                    const isFollowing = storeObj.followers?.some(fid => {
+                      const idStr = typeof fid === "object" ? (fid._id || fid) : fid;
+                      return idStr.toString() === userIdStr?.toString();
+                    });
+
+                    const isSelected = selectedVoucherId === v._id;
+
+                    return (
+                      <div
+                        key={v._id}
+                        style={{
+                          display: "flex",
+                          border: isSelected ? "1px solid var(--primary)" : "1px solid #e2e8f0",
+                          borderRadius: "8px",
+                          overflow: "hidden",
+                          background: isSelected ? "#fff5f5" : "white"
+                        }}
+                      >
+                        {/* Left color bar */}
+                        <div style={{ width: "80px", background: isStoreCoupon ? "#10b981" : "var(--primary)", color: "white", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "10px", textAlign: "center" }}>
+                          <span style={{ fontSize: "20px" }}>🏪</span>
+                          <span style={{ fontSize: "10px", fontWeight: "bold", marginTop: "4px" }}>Shop</span>
+                        </div>
+                        
+                        {/* Content */}
+                        <div style={{ flex: 1, padding: "12px 16px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                          <div>
+                            <div style={{ fontWeight: "bold", fontSize: "13px", color: "#64748b" }}>Shop: {storeName}</div>
+                            <div style={{ fontWeight: "bold", fontSize: "14px", color: "#1e293b", marginTop: "2px" }}>{v.code}</div>
+                            <div style={{ fontSize: "12px", color: "#1e293b", marginTop: "4px", fontWeight: "500" }}>
+                              Giảm {v.value}{v.discountType === 'percentage' ? '%' : 'đ'}
+                            </div>
+                            <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
+                              Đơn tối thiểu {formatPrice(v.minOrder || 0)}đ (của Shop)
+                            </div>
+                          </div>
+                          
+                          {!isEligibleOrder && (
+                            <div style={{ fontSize: "11px", color: "var(--primary)", marginTop: "4px" }}>
+                              Cần mua thêm {formatPrice((v.minOrder || 0) - storeSubtotal)}đ từ Shop
+                            </div>
+                          )}
+
+                          {!isFollowing && (
+                            <div style={{ fontSize: "11px", color: "#d97706", marginTop: "4px", fontWeight: "600" }}>
+                              ⚠️ Yêu cầu theo dõi Shop để mở khóa
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Action */}
+                        <div style={{ display: "flex", alignItems: "center", paddingRight: "16px" }}>
+                          {!isFollowing ? (
+                            <button
+                              onClick={() => handleFollowStore(storeObj._id)}
+                              style={{
+                                padding: "6px 10px",
+                                borderRadius: "4px",
+                                border: "1px solid #d97706",
+                                background: "#fffbeb",
+                                color: "#d97706",
+                                fontSize: "12px",
+                                fontWeight: "600",
+                                cursor: "pointer"
+                              }}
+                            >
+                              Theo dõi Shop
+                            </button>
+                          ) : (
+                            <button
+                              disabled={!isEligibleOrder}
+                              onClick={() => {
+                                setSelectedVoucherId(isSelected ? "" : v._id);
+                                setShowVoucherModal(false);
+                              }}
+                              style={{
+                                padding: "6px 12px",
+                                borderRadius: "4px",
+                                border: "none",
+                                background: isSelected ? "#64748b" : (isEligibleOrder ? "#10b981" : "#cbd5e1"),
+                                color: "white",
+                                fontSize: "12px",
+                                fontWeight: "600",
+                                cursor: isEligibleOrder ? "pointer" : "not-allowed"
+                              }}
+                            >
+                              {isSelected ? "Bỏ chọn" : "Dùng ngay"}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: "15px", marginTop: "15px", display: "flex", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setShowVoucherModal(false)}
+                style={{
+                  padding: "8px 20px",
+                  borderRadius: "4px",
+                  border: "1px solid #cbd5e1",
+                  background: "white",
+                  color: "#475569",
+                  fontWeight: "600",
+                  cursor: "pointer"
+                }}
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

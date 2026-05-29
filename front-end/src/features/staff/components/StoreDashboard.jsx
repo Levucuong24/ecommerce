@@ -64,6 +64,18 @@ function StoreDashboard({ store, token, onStoreUpdate }) {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const [loadingChats, setLoadingChats] = useState(false);
+  
+  const [vouchers, setVouchers] = useState([]);
+  const [showAddVoucherModal, setShowAddVoucherModal] = useState(false);
+  const [voucherFormData, setVoucherFormData] = useState({
+    code: "",
+    discountType: "percentage",
+    value: "",
+    minOrder: "",
+    maxUsage: "",
+    expiredAt: "",
+    limitPerUser: 1,
+  });
 
   const getStatusBadgeStyle = (status) => {
     switch (status) {
@@ -241,6 +253,93 @@ function StoreDashboard({ store, token, onStoreUpdate }) {
     }
   };
 
+  const fetchVouchers = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/coupons/store`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setVouchers(data || []);
+      }
+    } catch (error) {
+      console.error("Lỗi tải mã giảm giá:", error);
+    }
+  };
+
+  const handleCreateVoucher = async (e) => {
+    e.preventDefault();
+    if (!voucherFormData.code.trim()) {
+      alert("Vui lòng nhập mã giảm giá");
+      return;
+    }
+    try {
+      const response = await fetch(`${apiUrl}/coupons/store`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          code: voucherFormData.code,
+          discountType: voucherFormData.discountType,
+          value: Number(voucherFormData.value),
+          minOrder: Number(voucherFormData.minOrder || 0),
+          maxUsage: voucherFormData.maxUsage ? Number(voucherFormData.maxUsage) : undefined,
+          expiredAt: voucherFormData.expiredAt || undefined,
+          limitPerUser: Number(voucherFormData.limitPerUser || 1),
+        }),
+      });
+
+      if (response.ok) {
+        alert("Tạo mã giảm giá thành công!");
+        setShowAddVoucherModal(false);
+        setVoucherFormData({
+          code: "",
+          discountType: "percentage",
+          value: "",
+          minOrder: "",
+          maxUsage: "",
+          expiredAt: "",
+          limitPerUser: 1,
+        });
+        fetchVouchers();
+      } else {
+        const err = await response.json();
+        alert(err.message || "Không thể tạo mã giảm giá");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Lỗi hệ thống");
+    }
+  };
+
+  const handleDeleteVoucher = async (id) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa/vô hiệu hóa mã giảm giá này không?")) {
+      return;
+    }
+    try {
+      const response = await fetch(`${apiUrl}/coupons/store/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        alert("Đã xóa/vô hiệu hóa mã giảm giá");
+        fetchVouchers();
+      } else {
+        const err = await response.json();
+        alert(err.message || "Lỗi khi xóa mã giảm giá");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Lỗi hệ thống");
+    }
+  };
+
   useEffect(() => {
     if (store?._id) {
       fetchDashboardData();
@@ -255,6 +354,12 @@ function StoreDashboard({ store, token, onStoreUpdate }) {
       return () => unsubscribe();
     }
   }, [store]);
+
+  useEffect(() => {
+    if (activeTab === "vouchers") {
+      fetchVouchers();
+    }
+  }, [activeTab]);
 
   const formatPrice = (price) => {
     if (!price) return "0";
@@ -375,6 +480,15 @@ function StoreDashboard({ store, token, onStoreUpdate }) {
             </button>
             <button
               style={{
+                flex: 1, minWidth: "120px", padding: "15px", background: "none", border: "none", borderBottom: activeTab === "vouchers" ? "3px solid var(--primary)" : "3px solid transparent",
+                fontWeight: activeTab === "vouchers" ? "bold" : "normal", color: activeTab === "vouchers" ? "var(--primary)" : "var(--text-secondary)", cursor: "pointer", fontSize: "16px"
+              }}
+              onClick={() => setActiveTab("vouchers")}
+            >
+              Khuyến mãi (Voucher)
+            </button>
+            <button
+              style={{
                 flex: 1, minWidth: "120px", padding: "15px", background: "none", border: "none", borderBottom: activeTab === "reviews" ? "3px solid var(--primary)" : "3px solid transparent",
                 fontWeight: activeTab === "reviews" ? "bold" : "normal", color: activeTab === "reviews" ? "var(--primary)" : "var(--text-secondary)", cursor: "pointer", fontSize: "16px"
               }}
@@ -492,6 +606,92 @@ function StoreDashboard({ store, token, onStoreUpdate }) {
                   </table>
                 </div>
               )
+            ) : activeTab === "vouchers" ? (
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                  <h4 style={{ margin: 0, fontSize: "18px", color: "#1e293b" }}>Danh sách Mã giảm giá của Shop</h4>
+                  <button
+                    className="grant-btn"
+                    onClick={() => {
+                      setVoucherFormData({
+                        code: "",
+                        discountType: "percentage",
+                        value: "",
+                        minOrder: "",
+                        maxUsage: "",
+                        expiredAt: "",
+                        limitPerUser: 1,
+                      });
+                      setShowAddVoucherModal(true);
+                    }}
+                  >
+                    + Tạo Voucher mới
+                  </button>
+                </div>
+
+                {vouchers.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "40px 0", color: "var(--text-secondary)" }}>
+                    Chưa có mã giảm giá nào được tạo.
+                  </div>
+                ) : (
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "13px" }}>
+                      <thead>
+                        <tr style={{ borderBottom: "2px solid var(--border-color)", color: "var(--text-secondary)", background: "#fafafa" }}>
+                          <th style={{ padding: "12px" }}>Mã Code</th>
+                          <th style={{ padding: "12px" }}>Loại giảm</th>
+                          <th style={{ padding: "12px" }}>Giá trị</th>
+                          <th style={{ padding: "12px" }}>Đơn tối thiểu</th>
+                          <th style={{ padding: "12px" }}>Lượt tối đa</th>
+                          <th style={{ padding: "12px" }}>Đã dùng</th>
+                          <th style={{ padding: "12px" }}>Giới hạn/User</th>
+                          <th style={{ padding: "12px" }}>Hạn sử dụng</th>
+                          <th style={{ padding: "12px" }}>Trạng thái</th>
+                          <th style={{ padding: "12px" }}>Hành động</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {vouchers.map((v) => (
+                          <tr key={v._id} style={{ borderBottom: "1px solid var(--border-color)" }}>
+                            <td style={{ padding: "12px", fontWeight: "bold", color: "var(--primary)" }}>{v.code}</td>
+                            <td style={{ padding: "12px" }}>{v.discountType === "percentage" ? "Phần trăm (%)" : "Cố định (đ)"}</td>
+                            <td style={{ padding: "12px", fontWeight: "600" }}>{v.discountType === "percentage" ? `${v.value}%` : `${formatPrice(v.value)}đ`}</td>
+                            <td style={{ padding: "12px" }}>{formatPrice(v.minOrder)}đ</td>
+                            <td style={{ padding: "12px" }}>{v.maxUsage !== undefined ? v.maxUsage : "Không giới hạn"}</td>
+                            <td style={{ padding: "12px" }}>{v.usedBy ? v.usedBy.length : 0} lượt</td>
+                            <td style={{ padding: "12px" }}>Giới hạn {v.limitPerUser || 1} lần</td>
+                            <td style={{ padding: "12px", color: "#64748b" }}>
+                              {v.expiredAt ? new Date(v.expiredAt).toLocaleDateString("vi-VN") : "Vô thời hạn"}
+                            </td>
+                            <td style={{ padding: "12px" }}>
+                              <span style={{
+                                padding: "2px 6px",
+                                borderRadius: "4px",
+                                fontSize: "11px",
+                                fontWeight: "600",
+                                background: v.isActive ? "#dcfce7" : "#fee2e2",
+                                color: v.isActive ? "#16a34a" : "#b91c1c"
+                              }}>
+                                {v.isActive ? "Hoạt động" : "Đã tắt"}
+                              </span>
+                            </td>
+                            <td style={{ padding: "12px" }}>
+                              {v.isActive && (
+                                <button
+                                  onClick={() => handleDeleteVoucher(v._id)}
+                                  style={{ padding: "4px 8px", background: "none", border: "1px solid #ef4444", color: "#ef4444", borderRadius: "4px", cursor: "pointer", fontSize: "12px" }}
+                                >
+                                  Xóa
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
             ) : activeTab === "reviews" ? (
               reviews.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "40px 0" }}>
@@ -1031,6 +1231,149 @@ function StoreDashboard({ store, token, onStoreUpdate }) {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showAddVoucherModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+          onClick={() => setShowAddVoucherModal(false)}
+        >
+          <div
+            style={{
+              background: "white",
+              padding: "24px 30px",
+              borderRadius: "12px",
+              maxWidth: "500px",
+              width: "90%",
+              boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+              maxHeight: "90vh",
+              overflowY: "auto"
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 style={{ marginBottom: "20px", color: "var(--primary)" }}>Tạo mã giảm giá mới</h3>
+            <form onSubmit={handleCreateVoucher}>
+              <div style={{ marginBottom: "15px" }}>
+                <label style={{ display: "block", fontSize: "13px", color: "#64748b", marginBottom: "5px", fontWeight: "600" }}>Mã giảm giá (Code):</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ví dụ: DISCSHOP20"
+                  value={voucherFormData.code}
+                  onChange={e => setVoucherFormData({ ...voucherFormData, code: e.target.value })}
+                  style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "14px" }}
+                />
+              </div>
+
+              <div style={{ display: "flex", gap: "15px", marginBottom: "15px" }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: "13px", color: "#64748b", marginBottom: "5px", fontWeight: "600" }}>Loại chiết khấu:</label>
+                  <select
+                    value={voucherFormData.discountType}
+                    onChange={e => setVoucherFormData({ ...voucherFormData, discountType: e.target.value })}
+                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "14px", background: "white" }}
+                  >
+                    <option value="percentage">Phần trăm (%)</option>
+                    <option value="fixed">Số tiền cố định (đ)</option>
+                  </select>
+                </div>
+
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: "13px", color: "#64748b", marginBottom: "5px", fontWeight: "600" }}>
+                    Giá trị giảm ({voucherFormData.discountType === "percentage" ? "%" : "đ"}):
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    placeholder={voucherFormData.discountType === "percentage" ? "Ví dụ: 15" : "Ví dụ: 30000"}
+                    value={voucherFormData.value}
+                    onChange={e => setVoucherFormData({ ...voucherFormData, value: e.target.value })}
+                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "14px" }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: "15px", marginBottom: "15px" }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: "13px", color: "#64748b", marginBottom: "5px", fontWeight: "600" }}>Đơn hàng tối thiểu (đ):</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Ví dụ: 100000"
+                    value={voucherFormData.minOrder}
+                    onChange={e => setVoucherFormData({ ...voucherFormData, minOrder: e.target.value })}
+                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "14px" }}
+                  />
+                </div>
+
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: "13px", color: "#64748b", marginBottom: "5px", fontWeight: "600" }}>Tổng số lượt dùng tối đa:</label>
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="Không giới hạn"
+                    value={voucherFormData.maxUsage}
+                    onChange={e => setVoucherFormData({ ...voucherFormData, maxUsage: e.target.value })}
+                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "14px" }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: "15px", marginBottom: "20px" }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: "13px", color: "#64748b", marginBottom: "5px", fontWeight: "600" }}>Số lần sử dụng tối đa / user:</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={voucherFormData.limitPerUser}
+                    onChange={e => setVoucherFormData({ ...voucherFormData, limitPerUser: e.target.value })}
+                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "14px" }}
+                  />
+                </div>
+
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: "13px", color: "#64748b", marginBottom: "5px", fontWeight: "600" }}>Ngày hết hạn:</label>
+                  <input
+                    type="date"
+                    value={voucherFormData.expiredAt}
+                    onChange={e => setVoucherFormData({ ...voucherFormData, expiredAt: e.target.value })}
+                    style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "14px" }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", borderTop: "1px solid #f1f5f9", paddingTop: "15px" }}>
+                <button
+                  type="button"
+                  className="revoke-btn"
+                  onClick={() => setShowAddVoucherModal(false)}
+                  style={{ padding: "10px 20px" }}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="grant-btn"
+                  style={{ padding: "10px 25px" }}
+                >
+                  Tạo mã
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
