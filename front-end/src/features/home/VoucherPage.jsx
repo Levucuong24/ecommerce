@@ -9,6 +9,7 @@ const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 function VoucherPage({ user, onLogout, onOpenLogin, onOpenCart }) {
   const navigate = useNavigate();
   const [savedVouchers, setSavedVouchers] = useState([]);
+  const [usedMockVouchers, setUsedMockVouchers] = useState([]);
   const [apiCoupons, setApiCoupons] = useState([]);
 
   useEffect(() => {
@@ -44,6 +45,8 @@ function VoucherPage({ user, onLogout, onOpenLogin, onOpenCart }) {
             .map(o => o.voucherId)
             .filter(vid => vid && vid.startsWith('v'));
             
+          setUsedMockVouchers(activeUsedMockVouchers);
+            
           const beforeLen = updated.length;
           updated = updated.filter(vid => !activeUsedMockVouchers.includes(vid));
           if (updated.length !== beforeLen) {
@@ -78,9 +81,7 @@ function VoucherPage({ user, onLogout, onOpenLogin, onOpenCart }) {
   useEffect(() => {
     const fetchCoupons = async () => {
       try {
-        const url = user
-          ? `${apiUrl}/coupons?userId=${user._id || user.id}`
-          : `${apiUrl}/coupons`;
+        const url = `${apiUrl}/coupons`;
         const response = await fetch(url);
         if (response.ok) {
           const data = await response.json();
@@ -129,6 +130,14 @@ function VoucherPage({ user, onLogout, onOpenLogin, onOpenCart }) {
           {/* API Coupons (Like Welcome Voucher) */}
           {apiCoupons
             .filter(v => v.isActive !== false && (!v.expiredAt || new Date(v.expiredAt) > new Date()))
+            .filter(v => {
+              if (!user) return true;
+              const userId = user._id || user.id;
+              if (v.usedBy && v.usedBy.some(id => String(id) === String(userId))) {
+                return false;
+              }
+              return true;
+            })
             .map(voucher => (
             <div className="voucher-item" key={voucher._id} style={{ border: '1px solid var(--primary)', background: '#fff9f9' }}>
               <div className="voucher-info">
@@ -150,7 +159,9 @@ function VoucherPage({ user, onLogout, onOpenLogin, onOpenCart }) {
           ))}
 
           {/* Mock Vouchers */}
-          {mockVouchers.map(voucher => (
+          {mockVouchers
+            .filter(voucher => !savedVouchers.includes(voucher.id) && !usedMockVouchers.includes(voucher.id))
+            .map(voucher => (
             <div className="voucher-item" key={voucher.id}>
               <div className="voucher-info">
                 <h4>{voucher.title}</h4>

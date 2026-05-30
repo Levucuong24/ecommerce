@@ -15,6 +15,7 @@ import StaffPage from "./features/staff/StaffPage";
 import LikedProductsPage from "./features/shop/LikedProductsPage";
 import VoucherPage from "./features/home/VoucherPage";
 import OrderHistoryPage from "./features/shop/OrderHistoryPage";
+import ProfilePage from "./features/shop/ProfilePage";
 import { clearAuthSession, getAuthUser, saveAuthSession, getAuthToken } from "./utils/authStorage";
 import { DATA_EVENTS, emitDataChanged } from "./utils/realtimeEvents";
 import ChatWidget from "./components/ChatWidget";
@@ -421,6 +422,23 @@ function App() {
               onLogout={handleLogout}
               onOpenLogin={() => openAuthPage("login")}
               onOpenCart={openCartPage}
+            />
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProfilePage
+              user={user}
+              onLogout={handleLogout}
+              onOpenLogin={() => openAuthPage("login")}
+              onOpenCart={openCartPage}
+              onUpdateUser={(updatedUser) => {
+                const remember = localStorage.getItem("auth_remember") === "true";
+                const token = getAuthToken();
+                saveAuthSession(token, updatedUser, remember);
+                setUser(updatedUser);
+              }}
             />
           }
         />

@@ -316,10 +316,45 @@ const googleLogin = async (credential) => {
   };
 };
 
+const updateUserProfile = async (userId, { name, phone, avatar }) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    const error = new Error("Người dùng không tồn tại");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (name !== undefined) user.name = name.trim();
+  if (phone !== undefined) {
+    const cleanPhone = phone.trim();
+    if (cleanPhone) {
+      const allowedPrefixes = [
+        "032", "033", "034", "035", "036", "037", "038", "039", 
+        "086", "096", "097", "098", 
+        "081", "082", "083", "084", "085", "088", "091", "094", 
+        "070", "076", "077", "078", "079", "089", "090", "093", 
+        "052", "056", "058", "092", "059", "099"
+      ];
+      const isValid = cleanPhone.length === 10 && allowedPrefixes.some(prefix => cleanPhone.startsWith(prefix)) && /^\d+$/.test(cleanPhone);
+      if (!isValid) {
+        const error = new Error("Số điện thoại không hợp lệ hoặc không thuộc nhà mạng được hỗ trợ");
+        error.statusCode = 400;
+        throw error;
+      }
+      user.phone = cleanPhone;
+    }
+  }
+  if (avatar !== undefined) user.avatar = avatar;
+
+  await user.save();
+  return sanitizeUser(user);
+};
+
 module.exports = {
   registerUser,
   loginUser,
   getCurrentUser,
+  updateUserProfile,
   forgotPassword,
   resetPassword,
   googleLogin,

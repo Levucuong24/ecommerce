@@ -225,13 +225,16 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
                 Hi, {user.name}
               </span>
               <div className="user-dropdown-popup">
-                <button type="button" onClick={() => window.location.href = "/orders/history"} className="admin-dash-btn">
+                <button type="button" onClick={() => navigate("/profile")} className="admin-dash-btn">
+                  Hồ sơ của tôi
+                </button>
+                <button type="button" onClick={() => navigate("/orders/history")} className="admin-dash-btn">
                   Đơn mua của tôi
                 </button>
-                <button type="button" onClick={() => window.location.href = "/liked-products"} className="admin-dash-btn">
+                <button type="button" onClick={() => navigate("/liked-products")} className="admin-dash-btn">
                   Sản phẩm yêu thích {likedCount > 0 && <span style={{ color: "var(--primary)", fontWeight: "bold" }}>({likedCount})</span>}
                 </button>
-                <button type="button" onClick={() => window.location.href = "/following-shops"} className="admin-dash-btn">
+                <button type="button" onClick={() => navigate("/following-shops")} className="admin-dash-btn">
                   Shop đang theo dõi
                 </button>
                 {(user.role === "admin" || user.role === "staff") && (

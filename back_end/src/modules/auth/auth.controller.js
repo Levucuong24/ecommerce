@@ -36,10 +36,16 @@ const googleLogin = asyncHandler(async (req, res) => {
     sendResponse(res, 200, "Google login successful", { token, user });
 });
 
+const updateProfile = asyncHandler(async (req, res) => {
+    const updatedUser = await authService.updateUserProfile(req.user.userId, req.body);
+    sendResponse(res, 200, "Update profile successful", { user: updatedUser });
+});
+
 module.exports = {
   register,
   login,
   me,
+  updateProfile,
   forgotPassword,
   resetPassword,
   googleLogin,

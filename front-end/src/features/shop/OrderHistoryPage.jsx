@@ -9,6 +9,7 @@ const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 function OrderHistoryPage({ user, onLogout, onOpenLogin, onOpenCart }) {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
+  const [activeTab, setActiveTab] = useState("all");
   const [loading, setLoading] = useState(true);
 
   const fetchOrders = useCallback(async () => {
@@ -26,8 +27,7 @@ function OrderHistoryPage({ user, onLogout, onOpenLogin, onOpenCart }) {
       });
       if (response.ok) {
         const data = await response.json();
-        const activeOrders = data.filter(order => order.orderStatus !== "cancelled");
-        setOrders(activeOrders);
+        setOrders(data);
 
         // Sync mock vouchers
         const saved = JSON.parse(localStorage.getItem("savedVouchers") || "[]");
@@ -134,6 +134,11 @@ function OrderHistoryPage({ user, onLogout, onOpenLogin, onOpenCart }) {
     return new Intl.NumberFormat("vi-VN").format(price);
   };
 
+  const filteredOrders = orders.filter(order => {
+    if (activeTab === "all") return true;
+    return order.orderStatus === activeTab;
+  });
+
   return (
     <div className="order-history-page shopee-inspired">
       <Header
@@ -174,15 +179,62 @@ function OrderHistoryPage({ user, onLogout, onOpenLogin, onOpenCart }) {
           </div>
         ) : loading ? (
           <div style={{ textAlign: "center", padding: "50px 0" }}>Đang tải...</div>
-        ) : orders.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "60px 0", background: "white", borderRadius: "8px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-            <div style={{ fontSize: "48px", marginBottom: "20px" }}>📦</div>
-            <p style={{ color: "var(--text-secondary)" }}>Bạn chưa có đơn mua nào.</p>
-            <button className="primary-btn" style={{ marginTop: "15px" }} onClick={() => navigate("/home")}>Mua sắm ngay</button>
-          </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-            {orders.map((order) => {
+          <>
+            {user && (
+              <div style={{ 
+                display: "flex", 
+                background: "white", 
+                borderRadius: "8px", 
+                boxShadow: "0 2px 8px rgba(0,0,0,0.06)", 
+                marginBottom: "20px", 
+                overflow: "hidden",
+                border: "1px solid #f0f0f0"
+              }}>
+                {[
+                  { id: "all", label: "Tất cả" },
+                  { id: "pending", label: "Chờ xử lý" },
+                  { id: "processing", label: "Đang giao" },
+                  { id: "completed", label: "Hoàn thành" },
+                  { id: "cancelled", label: "Đã hủy" }
+                ].map((tab) => {
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      style={{
+                        flex: 1,
+                        padding: "16px 0",
+                        background: "none",
+                        border: "none",
+                        borderBottom: isActive ? "3px solid var(--primary)" : "3px solid transparent",
+                        color: isActive ? "var(--primary)" : "#555",
+                        fontWeight: isActive ? "bold" : "normal",
+                        cursor: "pointer",
+                        fontSize: "14px",
+                        textAlign: "center",
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {filteredOrders.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "60px 0", background: "white", borderRadius: "8px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", border: "1px solid #f0f0f0" }}>
+                <div style={{ fontSize: "48px", marginBottom: "20px" }}>📦</div>
+                <p style={{ color: "var(--text-secondary)" }}>Không có đơn mua nào ở trạng thái này.</p>
+                {activeTab === "all" && (
+                  <button className="primary-btn" style={{ marginTop: "15px" }} onClick={() => navigate("/home")}>Mua sắm ngay</button>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                {filteredOrders.map((order) => {
               const badge = getStatusBadgeStyle(order.orderStatus);
               return (
                 <div key={order._id} style={{ background: "white", borderRadius: "8px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", overflow: "hidden", border: "1px solid #f0f0f0" }}>
@@ -282,6 +334,8 @@ function OrderHistoryPage({ user, onLogout, onOpenLogin, onOpenCart }) {
             })}
           </div>
         )}
+      </>
+    )}
       </main>
     </div>
   );
