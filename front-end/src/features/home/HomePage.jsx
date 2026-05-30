@@ -113,6 +113,11 @@ function HomePage({ onOpenLogin, onOpenCart, user, onLogout }) {
   };
 
   const handleVoucherClick = () => {
+    if (!user) {
+      alert("Vui lòng đăng nhập để xem kho voucher.");
+      onOpenLogin();
+      return;
+    }
     navigate('/vouchers');
   };
 

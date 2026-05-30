@@ -17,6 +17,13 @@ function VoucherPage({ user, onLogout, onOpenLogin, onOpenCart }) {
   }, []);
 
   useEffect(() => {
+    if (!user) {
+      alert("Vui lòng đăng nhập để xem kho voucher.");
+      onOpenLogin();
+    }
+  }, [user, onOpenLogin]);
+
+  useEffect(() => {
     const syncMockVouchers = async () => {
       if (!user) return;
       try {
@@ -104,6 +111,8 @@ function VoucherPage({ user, onLogout, onOpenLogin, onOpenCart }) {
       alert("Đã lưu mã giảm giá! Bạn có thể sử dụng mã này ở trang Giỏ hàng.");
     }
   };
+
+  if (!user) return null;
 
   return (
     <main className="following-shops-page">
