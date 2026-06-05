@@ -9,6 +9,7 @@ const router = express.Router();
 router.use(protect);
 router.post("/check-in", userController.checkIn);
 router.get("/coins-status", userController.getCoinsStatus);
+router.post("/spin-wheel", userController.spinWheel);
 
 // Only admin can manage users
 router.use(authorize("admin"));

@@ -1,7 +1,7 @@
 .hero-banner {
   max-width: 1400px;
   width: calc(100% - 40px);
-  margin: 154px auto 0; /* Precisely clears the header (~148px) with a tiny 6px gap */
+  margin: 185px auto 0; /* Clear the header with extra safe space */
 }
 
 .hero-carousel {

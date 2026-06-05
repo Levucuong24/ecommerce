@@ -102,7 +102,7 @@ function ProfilePage({ user, onLogout, onOpenLogin, onOpenCart, onUpdateUser }) 
   };
 
   return (
-    <div className="profile-page shopee-inspired">
+    <div className="profile-page shopee-inspired" style={{ paddingTop: "180px", backgroundColor: "var(--bg-main)", minHeight: "100vh" }}>
       <Header
         user={user}
         onOpenLogin={onOpenLogin}

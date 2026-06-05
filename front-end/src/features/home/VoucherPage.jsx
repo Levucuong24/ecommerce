@@ -116,7 +116,7 @@ function VoucherPage({ user, onLogout, onOpenLogin, onOpenCart }) {
   if (!user) return null;
 
   return (
-    <main className="following-shops-page">
+    <main className="following-shops-page" style={{ paddingTop: "180px", backgroundColor: "var(--bg-main)", minHeight: "100vh" }}>
       <Header
         user={user}
         onOpenLogin={onOpenLogin}

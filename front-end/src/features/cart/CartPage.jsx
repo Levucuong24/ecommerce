@@ -779,27 +779,29 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
                     const storeObj = v.storeId || {};
                     const storeName = storeObj.name || "Cửa hàng";
                     
-                    // Check subtotal of the specific store
-                    const storeSubtotal = cart?.items
-                      ? cart.items
-                          .filter(item => {
-                            const itemStoreId = item.productId?.storeId;
-                            const itemStoreIdStr = (itemStoreId?._id || itemStoreId || "").toString();
-                            const storeIdStr = (storeObj._id || storeObj || "").toString();
-                            return itemStoreIdStr === storeIdStr;
-                          })
-                          .reduce((sum, item) => {
-                            const priceInfo = getItemPriceInfo(item);
-                            const price = priceInfo.discountPrice || priceInfo.price || 0;
-                            return sum + price * item.quantity;
-                          }, 0)
-                      : 0;
+                    // Check subtotal of the specific store / platform
+                    const storeSubtotal = isStoreCoupon
+                      ? (cart?.items
+                          ? cart.items
+                              .filter(item => {
+                                const itemStoreId = item.productId?.storeId;
+                                const itemStoreIdStr = (itemStoreId?._id || itemStoreId || "").toString();
+                                const storeIdStr = (storeObj._id || storeObj || "").toString();
+                                return itemStoreIdStr === storeIdStr;
+                              })
+                              .reduce((sum, item) => {
+                                const priceInfo = getItemPriceInfo(item);
+                                const price = priceInfo.discountPrice || priceInfo.price || 0;
+                                return sum + price * item.quantity;
+                              }, 0)
+                          : 0)
+                      : subtotal;
 
                     const isEligibleOrder = storeSubtotal >= (v.minOrder || 0);
 
-                    // Check if followed
+                    // Check if followed (system coupons don't require following)
                     const userIdStr = user?._id || user?.id;
-                    const isFollowing = storeObj.followers?.some(fid => {
+                    const isFollowing = !isStoreCoupon || storeObj.followers?.some(fid => {
                       const idStr = typeof fid === "object" ? (fid._id || fid) : fid;
                       return idStr.toString() === userIdStr?.toString();
                     });
@@ -818,31 +820,35 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
                         }}
                       >
                         {/* Left color bar */}
-                        <div style={{ width: "80px", background: isStoreCoupon ? "#10b981" : "var(--primary)", color: "white", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "10px", textAlign: "center" }}>
-                          <span style={{ fontSize: "20px" }}>🏪</span>
-                          <span style={{ fontSize: "10px", fontWeight: "bold", marginTop: "4px" }}>Shop</span>
+                        <div style={{ width: "80px", background: isStoreCoupon ? "#10b981" : "#ec4899", color: "white", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "10px", textAlign: "center" }}>
+                          <span style={{ fontSize: "20px" }}>{isStoreCoupon ? "🏪" : "🎁"}</span>
+                          <span style={{ fontSize: "10px", fontWeight: "bold", marginTop: "4px" }}>{isStoreCoupon ? "Shop" : "Hệ thống"}</span>
                         </div>
                         
                         {/* Content */}
                         <div style={{ flex: 1, padding: "12px 16px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                           <div>
-                            <div style={{ fontWeight: "bold", fontSize: "13px", color: "#64748b" }}>Shop: {storeName}</div>
+                            {isStoreCoupon ? (
+                              <div style={{ fontWeight: "bold", fontSize: "13px", color: "#64748b" }}>Shop: {storeName}</div>
+                            ) : (
+                              <div style={{ fontWeight: "bold", fontSize: "13px", color: "#ec4899" }}>Quà Vòng Quay May Mắn</div>
+                            )}
                             <div style={{ fontWeight: "bold", fontSize: "14px", color: "#1e293b", marginTop: "2px" }}>{v.code}</div>
                             <div style={{ fontSize: "12px", color: "#1e293b", marginTop: "4px", fontWeight: "500" }}>
                               Giảm {v.value}{v.discountType === 'percentage' ? '%' : 'đ'}
                             </div>
                             <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
-                              Đơn tối thiểu {formatPrice(v.minOrder || 0)}đ (của Shop)
+                              Đơn tối thiểu {formatPrice(v.minOrder || 0)}đ {isStoreCoupon ? "(của Shop)" : ""}
                             </div>
                           </div>
                           
                           {!isEligibleOrder && (
                             <div style={{ fontSize: "11px", color: "var(--primary)", marginTop: "4px" }}>
-                              Cần mua thêm {formatPrice((v.minOrder || 0) - storeSubtotal)}đ từ Shop
+                              Cần mua thêm {formatPrice((v.minOrder || 0) - storeSubtotal)}đ {isStoreCoupon ? "từ Shop" : ""}
                             </div>
                           )}
 
-                          {!isFollowing && (
+                          {!isFollowing && isStoreCoupon && (
                             <div style={{ fontSize: "11px", color: "#d97706", marginTop: "4px", fontWeight: "600" }}>
                               ⚠️ Yêu cầu theo dõi Shop để mở khóa
                             </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import AuthShell from "./features/auth/AuthShell";
 import LoginForm from "./features/auth/login/LoginForm";
@@ -51,6 +51,11 @@ function App() {
   const [activeChatStore, setActiveChatStore] = useState(null);
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [coinsStatus, setCoinsStatus] = useState({ coins: 0, checkedInToday: false });
+  const [showSpinModal, setShowSpinModal] = useState(false);
+  const [spinAngle, setSpinAngle] = useState(0);
+  const [spinTransition, setSpinTransition] = useState("");
+  const [isSpinning, setIsSpinning] = useState(false);
+  const canvasRef = useRef(null);
 
   const fetchCoinsStatus = async () => {
     if (!user) return;
@@ -100,6 +105,126 @@ function App() {
     } catch (err) {
       console.error(err);
       alert("Lỗi hệ thống khi điểm danh");
+    }
+  };
+
+  const drawWheel = (canvas) => {
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const size = canvas.width;
+    const center = size / 2;
+    const radius = center - 10;
+    
+    ctx.clearRect(0, 0, size, size);
+    
+    const prizes = [
+      { text: "Chúc may mắn 🍀", color: "#94a3b8" },
+      { text: "50 Xu 🪙", color: "#fbbf24" },
+      { text: "Voucher 10% 🎟️", color: "#ec4899" },
+      { text: "200 Xu 🪙", color: "#f59e0b" },
+      { text: "Voucher 20k 🎟️", color: "#8b5cf6" },
+      { text: "500 Xu 🪙", color: "#10b981" },
+    ];
+    
+    const sliceAngle = (2 * Math.PI) / 6;
+    
+    prizes.forEach((prize, index) => {
+      const angle = index * sliceAngle;
+      
+      ctx.beginPath();
+      ctx.moveTo(center, center);
+      ctx.arc(center, center, radius, angle, angle + sliceAngle);
+      ctx.closePath();
+      ctx.fillStyle = prize.color;
+      ctx.fill();
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      
+      ctx.save();
+      ctx.translate(center, center);
+      ctx.rotate(angle + sliceAngle / 2);
+      ctx.textAlign = "right";
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 13px Inter, sans-serif";
+      ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
+      ctx.shadowBlur = 4;
+      ctx.fillText(prize.text, radius - 15, 5);
+      ctx.restore();
+    });
+    
+    ctx.beginPath();
+    ctx.arc(center, center, radius, 0, 2 * Math.PI);
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 5;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(center, center, 20, 0, 2 * Math.PI);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+    ctx.strokeStyle = "#cbd5e1";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  };
+
+  useEffect(() => {
+    if (showSpinModal && canvasRef.current) {
+      drawWheel(canvasRef.current);
+    }
+  }, [showSpinModal]);
+
+  const handleStartSpin = async () => {
+    if (isSpinning) return;
+    
+    if ((coinsStatus.coins || 0) < 100) {
+      alert("Bạn không đủ xu để thực hiện vòng quay! Mỗi lượt quay tốn 100 xu.");
+      return;
+    }
+
+    setIsSpinning(true);
+    setSpinTransition("");
+    
+    try {
+      const token = getAuthToken();
+      const res = await fetch(`${apiUrl}/users/spin-wheel`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        
+        const targetSectorAngle = 270 - (data.prizeIndex * 60 + 30);
+        const finalAngle = spinAngle + 1800 + targetSectorAngle - (spinAngle % 360);
+        
+        setSpinTransition("transform 4.5s cubic-bezier(0.15, 0.85, 0.35, 1)");
+        setSpinAngle(finalAngle);
+        
+        setTimeout(() => {
+          setIsSpinning(false);
+          setCoinsStatus(prev => ({ ...prev, coins: data.remainingCoins }));
+          
+          if (data.prizeType === "none") {
+            alert("Rất tiếc! Chúc bạn may mắn lần sau. 🍀");
+          } else if (data.prizeType === "coins") {
+            alert(`Chúc mừng! Bạn đã trúng thêm ${data.coinsAwarded} xu! 🪙`);
+          } else if (data.prizeType === "voucher") {
+            alert(`Chúc mừng! Bạn đã trúng Voucher giảm giá: ${data.couponCode} 🎟️.\nMã giảm giá này đã được tự động thêm vào kho Voucher của bạn và có hạn dùng trong 7 ngày!`);
+          }
+          
+          emitDataChanged(DATA_EVENTS.USERS);
+        }, 4700);
+
+      } else {
+        const err = await res.json();
+        alert(err.message || "Quay thưởng thất bại");
+        setIsSpinning(false);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Lỗi kết nối khi thực hiện vòng quay");
+      setIsSpinning(false);
     }
   };
 
@@ -607,12 +732,54 @@ function App() {
         </button>
       )}
 
+      {/* Nút nổi Vòng quay may mắn */}
+      {user && (
+        <button
+          onClick={() => setShowSpinModal(true)}
+          style={{
+            position: "fixed",
+            bottom: "164px",
+            right: "24px",
+            width: "56px",
+            height: "56px",
+            borderRadius: "50%",
+            background: "linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%)",
+            border: "none",
+            boxShadow: "0 4px 15px rgba(139, 92, 246, 0.4)",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "26px",
+            zIndex: 999,
+            transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+            animation: coinsStatus.coins >= 100 ? "pulseSpinButton 2s infinite" : "none",
+          }}
+          title="Vòng quay may mắn nhận Voucher"
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "scale(1.1) translateY(-3px)";
+            e.currentTarget.style.boxShadow = "0 6px 20px rgba(139, 92, 246, 0.5)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "scale(1) translateY(0)";
+            e.currentTarget.style.boxShadow = "0 4px 15px rgba(139, 92, 246, 0.4)";
+          }}
+        >
+          🎡
+        </button>
+      )}
+
       {/* CSS Keyframes cho hiệu ứng nhấp nháy của nút */}
       <style>{`
         @keyframes pulseCheckIn {
           0% { transform: scale(1); box-shadow: 0 4px 15px rgba(217, 119, 6, 0.4); }
           50% { transform: scale(1.1); box-shadow: 0 4px 25px rgba(217, 119, 6, 0.7); }
           100% { transform: scale(1); box-shadow: 0 4px 15px rgba(217, 119, 6, 0.4); }
+        }
+        @keyframes pulseSpinButton {
+          0% { transform: scale(1); box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4); }
+          50% { transform: scale(1.1); box-shadow: 0 4px 25px rgba(139, 92, 246, 0.7); }
+          100% { transform: scale(1); box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4); }
         }
         @keyframes fadeIn {
           from { opacity: 0; }
@@ -802,6 +969,164 @@ function App() {
             >
               {coinsStatus.checkedInToday ? "Đã điểm danh hôm nay" : "Điểm danh ngay (Nhận 200 xu)"}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Vòng Quay May Mắn */}
+      {showSpinModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            background: "rgba(15, 23, 42, 0.6)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10000,
+            animation: "fadeIn 0.2s ease-out"
+          }}
+          onClick={() => {
+            if (!isSpinning) setShowSpinModal(false);
+          }}
+        >
+          <div
+            style={{
+              background: "#ffffff",
+              borderRadius: "24px",
+              width: "440px",
+              padding: "26px",
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+              position: "relative",
+              textAlign: "center",
+              animation: "slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+              border: "1px solid rgba(226, 232, 240, 0.8)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Nút đóng */}
+            <button
+              disabled={isSpinning}
+              onClick={() => setShowSpinModal(false)}
+              style={{
+                position: "absolute",
+                top: "16px",
+                right: "16px",
+                background: "none",
+                border: "none",
+                fontSize: "20px",
+                color: "#94a3b8",
+                cursor: isSpinning ? "not-allowed" : "pointer",
+                transition: "color 0.2s"
+              }}
+              onMouseEnter={(e) => { if (!isSpinning) e.currentTarget.style.color = "#475569"; }}
+              onMouseLeave={(e) => { if (!isSpinning) e.currentTarget.style.color = "#94a3b8"; }}
+            >
+              ✕
+            </button>
+
+            <h3 style={{ fontSize: "1.4rem", fontWeight: "700", color: "#1e293b", margin: "0 0 4px 0", display: "flex", alignItems: "center", gap: "8px" }}>
+              Vòng Quay May Mắn 🎡
+            </h3>
+            
+            <p style={{ color: "#64748b", fontSize: "13px", margin: "0 0 20px 0", maxWidth: "90%" }}>
+              Mỗi lượt quay tốn <strong>100 xu</strong>. Trúng voucher giảm giá hoặc thêm tới 500 xu!
+            </p>
+
+            {/* Vòng quay wrapper */}
+            <div style={{ position: "relative", width: "290px", height: "290px", marginBottom: "20px" }}>
+              {/* Mũi tên chỉ ô trúng thưởng */}
+              <div style={{
+                position: "absolute",
+                top: "-10px",
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: "0",
+                height: "0",
+                borderLeft: "15px solid transparent",
+                borderRight: "15px solid transparent",
+                borderTop: "25px solid #ef4444",
+                zIndex: 10,
+                filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))"
+              }} />
+
+              {/* Vòng quay Canvas */}
+              <div
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  transform: `rotate(${spinAngle}deg)`,
+                  transition: spinTransition,
+                  borderRadius: "50%",
+                  boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
+                }}
+              >
+                <canvas
+                  ref={canvasRef}
+                  width="280"
+                  height="280"
+                  style={{ display: "block", borderRadius: "50%" }}
+                />
+              </div>
+
+              {/* Nút QUAY trung tâm */}
+              <button
+                disabled={isSpinning}
+                onClick={handleStartSpin}
+                style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  width: "66px",
+                  height: "66px",
+                  borderRadius: "50%",
+                  background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                  border: "4px solid #ffffff",
+                  boxShadow: "0 4px 10px rgba(0,0,0,0.25)",
+                  color: "#ffffff",
+                  fontSize: "14px",
+                  fontWeight: "bold",
+                  cursor: isSpinning ? "not-allowed" : "pointer",
+                  zIndex: 5,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  letterSpacing: "0.5px"
+                }}
+              >
+                {isSpinning ? "Xoay..." : "QUAY"}
+              </button>
+            </div>
+
+            {/* Số dư xu hiện tại */}
+            <div style={{
+              background: "#f8fafc",
+              borderRadius: "16px",
+              padding: "10px 20px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              width: "100%",
+              marginBottom: "10px",
+              border: "1px solid #e2e8f0"
+            }}>
+              <span style={{ color: "#64748b", fontSize: "14px", fontWeight: "500" }}>Số xu hiện có:</span>
+              <span style={{ color: "#d97706", fontSize: "16px", fontWeight: "700", display: "flex", alignItems: "center", gap: "4px" }}>
+                🪙 {new Intl.NumberFormat("vi-VN").format(coinsStatus.coins)} xu
+              </span>
+            </div>
+            
+            <span style={{ fontSize: "11px", color: "#94a3b8" }}>
+              *Quà tặng Voucher có thời hạn sử dụng 7 ngày kể từ lúc trúng
+            </span>
           </div>
         </div>
       )}
