@@ -3,6 +3,8 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const Product = require("../models/product.model");
 const User = require("../models/user.model");
+const Category = require("../models/category.model");
+const Store = require("../models/store.model");
 
 const MONGO_URI = config.mongodbUri;
 
@@ -11,9 +13,10 @@ async function seed() {
     await mongoose.connect(MONGO_URI);
     console.log("Connected to MongoDB");
 
+    // Clear existing products and users
     await Product.deleteMany({});
     await User.deleteMany({ email: { $in: ["shop@example.com", "admin@example.com"] } });
-    console.log("Cleared existing data");
+    console.log("Cleared existing products and users");
 
     const hashedPassword = await bcrypt.hash("admin123", 10);
 
@@ -37,6 +40,39 @@ async function seed() {
       createdAt: new Date("2023-01-01")
     });
 
+    // Create or find store for shopUser
+    await Store.deleteMany({ ownerId: shopUser._id });
+    const store = await Store.create({
+      _id: new mongoose.Types.ObjectId(),
+      name: "GALAXY Official Store",
+      slug: "galaxy-official-store",
+      description: "Cửa hàng chính hãng GALAXY - Chuyên thiết bị điện tử & phụ kiện cao cấp",
+      logo: "shop_avatar.png",
+      banner: "shop_banner.png",
+      ownerId: shopUser._id,
+      status: "active",
+      isOnline: true,
+      createdAt: new Date("2023-01-01")
+    });
+    console.log("Created Store:", store.name);
+
+    // Helper to find or create a category
+    const getOrCreateCategory = async (name, slug) => {
+      let cat = await Category.findOne({ name });
+      if (!cat) {
+        cat = await Category.create({
+          _id: new mongoose.Types.ObjectId(),
+          name,
+          slug
+        });
+        console.log(`Created Category: ${name}`);
+      }
+      return cat;
+    };
+
+    const electronicsCat = await getOrCreateCategory("Thiết Bị Điện Tử", "thiet-bi-dien-tu");
+    const phonesCat = await getOrCreateCategory("Điện Thoại & Phụ Kiện", "dien-thoai-phu-kien");
+
     const products = [
       {
         _id: new mongoose.Types.ObjectId(),
@@ -51,6 +87,8 @@ async function seed() {
         soldCount: 40500,
         isPublished: true,
         createdBy: shopUser._id,
+        storeId: store._id,
+        categoryId: electronicsCat._id,
         images: ["galaxy_lamp.png"]
       },
       {
@@ -66,6 +104,8 @@ async function seed() {
         soldCount: 3200,
         isPublished: true,
         createdBy: shopUser._id,
+        storeId: store._id,
+        categoryId: phonesCat._id,
         images: ["iphone15promax.png"]
       },
       {
@@ -81,12 +121,14 @@ async function seed() {
         soldCount: 1200,
         isPublished: true,
         createdBy: shopUser._id,
+        storeId: store._id,
+        categoryId: phonesCat._id,
         images: ["marshall_major_iv.png"]
       }
     ];
 
     await Product.insertMany(products);
-    console.log("Inserted sample products and shop user");
+    console.log("Inserted sample products linked to categories and store successfully");
 
     process.exit();
   } catch (error) {

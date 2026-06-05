@@ -153,6 +153,14 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
     }
   };
 
+  const openDashboard = () => {
+    if (user?.role === "admin") {
+      navigate("/admin");
+    } else if (user?.role === "staff") {
+      navigate("/staff");
+    }
+  };
+
   return (
     <header className="shop-header">
       <div className="shop-header-top">

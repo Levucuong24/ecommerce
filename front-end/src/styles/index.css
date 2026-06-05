@@ -1,17 +1,23 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  /* Premium Palette - HSL based for better harmony */
-  --primary-h: 215;
-  --primary-s: 100%;
-  --primary-l: 50%;
+  /* Premium Palette - Indigo & Rose for high-end feel */
+  --primary-h: 239;
+  --primary-s: 84%;
+  --primary-l: 58%;
   
-  --primary: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
-  --primary-hover: hsl(var(--primary-h), var(--primary-s), 40%);
-  --primary-soft: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.1);
+  --primary: hsl(var(--primary-h), var(--primary-s), var(--primary-l)); /* #6366f1 Indigo */
+  --primary-hover: hsl(var(--primary-h), var(--primary-s), 48%); /* #4f46e5 */
+  --primary-soft: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.08);
   
-  --accent-h: 25;
-  --accent: hsl(var(--accent-h), 100%, 50%);
+  --accent-h: 342;
+  --accent-s: 88%;
+  --accent-l: 48%;
+  --accent: hsl(var(--accent-h), var(--accent-s), var(--accent-l)); /* #e11d48 Rose */
+  --accent-hover: hsl(var(--accent-h), var(--accent-s), 38%);
+  --accent-soft: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.08);
+  
+  --shopee-red: var(--accent); /* Legacy redirect for Shopee Red */
   
   --text-main: hsl(222, 47%, 11%);
   --text-muted: hsl(215, 16%, 47%);
@@ -19,8 +25,9 @@
   --bg-card: hsl(0, 0%, 100%);
   
   --border: hsl(214, 32%, 91%);
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.5);
+  --border-hover: hsl(214, 32%, 82%);
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.4);
   
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);

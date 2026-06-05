@@ -5,7 +5,7 @@
 }
 
 .hero-carousel {
-  background: linear-gradient(135deg, rgba(12, 91, 219, 0.08), rgba(15, 117, 255, 0.02));
+  background: linear-gradient(135deg, var(--primary-soft), rgba(99, 102, 241, 0.02));
   border-radius: 32px;
   overflow: hidden;
   position: relative;
@@ -132,7 +132,7 @@
 
 .hero-mini-card:hover {
   transform: translateY(-6px);
-  box-shadow: 0 28px 52px rgba(14, 88, 202, 0.18);
+  box-shadow: 0 28px 52px rgba(99, 102, 241, 0.12);
 }
 
 .quick-entry-grid {
@@ -148,7 +148,7 @@
   padding: 18px 10px;
   text-align: center;
   color: #0f172a;
-  box-shadow: 0 14px 32px rgba(14, 88, 202, 0.1);
+  box-shadow: 0 14px 32px rgba(99, 102, 241, 0.06);
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
@@ -157,8 +157,8 @@
 
 .quick-entry-card:hover {
   transform: translateY(-6px);
-  background: linear-gradient(180deg, #ffffff, #eef6ff);
-  box-shadow: 0 22px 40px rgba(14, 88, 202, 0.15);
+  background: linear-gradient(180deg, #ffffff, var(--primary-soft));
+  box-shadow: 0 22px 40px rgba(99, 102, 241, 0.12);
 }
 
 .quick-entry-card:hover .quick-entry-icon img {

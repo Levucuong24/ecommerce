@@ -116,7 +116,7 @@ a {
 }
 
 .thumbnail.active {
-  border-color: #ee4d2d;
+  border-color: var(--primary);
 }
 
 .thumbnail img {
@@ -181,7 +181,7 @@ a {
 }
 
 .favorite-badge {
-  background-color: #ee4d2d;
+  background-color: var(--accent);
   color: #fff;
   font-size: 0.75rem;
   font-weight: 500;
@@ -209,12 +209,12 @@ a {
 .sold-block { border-right: none; }
 
 .rating-value {
-  color: #ee4d2d;
+  color: var(--accent);
   font-weight: 500;
-  border-bottom: 1px solid #ee4d2d;
+  border-bottom: 1px solid var(--accent);
 }
 
-.rating-stars { color: #ee4d2d; font-size: 0.8rem; }
+.rating-stars { color: var(--accent); font-size: 0.8rem; }
 
 .count-value {
   color: #222;
@@ -252,18 +252,18 @@ a {
 }
 
 .current-price {
-  color: #ee4d2d;
-  font-size: 1.85rem;
+  font-size: 1.8rem;
   font-weight: 500;
+  color: var(--accent);
 }
 
 .discount-tag {
-  background: #ee4d2d;
+  background: var(--accent);
   color: #fff;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.75rem;
   padding: 2px 4px;
   border-radius: 2px;
+  font-weight: 600;
 }
 
 .product-promotions {
@@ -287,10 +287,11 @@ a {
 }
 
 .shop-voucher {
-  background: rgba(238, 77, 45, 0.1);
-  color: #ee4d2d;
-  padding: 2px 7px;
-  font-size: 0.85rem;
+  background: #fff;
+  border: 1px solid var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.75rem;
+  padding: 2px 8px;
   border-radius: 2px;
 }
 
@@ -315,7 +316,9 @@ a {
   color: #222;
 }
 
-.checkmark-icon { color: #ee4d2d; }
+.checkmark-icon {
+  color: var(--primary);
+}
 
 .variant-options {
   display: flex;
@@ -337,8 +340,8 @@ a {
 }
 
 .variant-btn:hover {
-  border-color: #ee4d2d;
-  color: #ee4d2d;
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .variant-btn img {
@@ -371,13 +374,10 @@ a {
 .qty-input {
   width: 50px;
   height: 32px;
-  border-top: 1px solid rgba(0,0,0,.09);
-  border-bottom: 1px solid rgba(0,0,0,.09);
-  border-left: none;
-  border-right: none;
+  border: 1px solid rgba(0,0,0,.09);
   text-align: center;
-  outline: none;
-  color: #ee4d2d;
+  font-size: 1rem;
+  color: var(--primary);
 }
 
 .stock-hint { color: #757575; font-size: 0.9rem; }
@@ -390,9 +390,9 @@ a {
 }
 
 .add-to-cart-btn {
-  background: rgba(238, 77, 45, 0.08);
-  color: #ee4d2d;
-  border: 1px solid #ee4d2d;
+  background: var(--primary-soft);
+  color: var(--primary);
+  border: 1px solid var(--primary);
   padding: 0 20px;
   height: 48px;
   display: flex;
@@ -402,8 +402,12 @@ a {
   font-size: 0.95rem;
 }
 
+.add-to-cart-btn:hover {
+  background: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.12);
+}
+
 .buy-now-btn {
-  background: #ee4d2d;
+  background: var(--primary);
   color: #fff;
   border: none;
   padding: 0 60px;
@@ -457,20 +461,27 @@ a {
 
 .shop-avatar span {
   font-size: 2rem;
-  color: #ee4d2d;
+  color: var(--accent);
   font-weight: 600;
 }
 
-.shop-badge {
+.shop-avatar span {
   position: absolute;
   bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #ee4d2d;
+  right: 0;
+  background: #fff;
+  border-radius: 50%;
+  padding: 2px;
+  color: var(--primary);
+}
+
+.shop-badge {
+  background: var(--primary);
   color: #fff;
   font-size: 0.65rem;
-  padding: 2px 8px;
+  padding: 2px 4px;
   border-radius: 2px;
+  font-weight: 500;
   white-space: nowrap;
 }
 
@@ -529,9 +540,9 @@ a {
 }
 
 .shop-chat-btn {
-  background: rgba(238, 77, 45, 0.08);
-  border: 1px solid #ee4d2d;
-  color: #ee4d2d;
+  background: #fff;
+  border: 1px solid var(--primary);
+  color: var(--primary);
 }
 
 .shop-view-btn {
@@ -562,7 +573,7 @@ a {
 }
 
 .stat-value {
-  color: #ee4d2d;
+  color: var(--primary);
   font-weight: 500;
 }
 .product-description-panel {
@@ -621,11 +632,11 @@ a {
 }
 
 .loader {
-  width: 48px;
-  height: 48px;
   border: 3px solid #f3f3f3;
-  border-top: 3px solid #ee4d2d;
+  border-top: 3px solid var(--primary);
   border-radius: 50%;
+  width: 30px;
+  height: 30px;
   animation: spin 1s linear infinite;
 }
 
@@ -2652,11 +2663,102 @@ a {
 
 .shop-category-item:hover {
   color: var(--primary);
-  background: rgba(12, 91, 219, 0.05);
+  background: var(--primary-soft);
 }
 
 .shop-category-item.active {
   font-weight: 600;
   color: var(--primary);
-  background: rgba(12, 91, 219, 0.08);
+  background: var(--primary-soft);
+}
+
+/* Custom Added Styles for Premium Feel */
+.like-btn {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  font-size: 1.1rem;
+}
+
+.like-btn:hover {
+  transform: scale(1.15);
+  background: #fff;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.12);
+}
+
+.like-btn:active {
+  transform: scale(0.9);
+}
+
+.flash-item-thumb {
+  position: relative;
+  height: 180px;
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  padding: 10px;
+  width: 100%;
+}
+
+.flash-item-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+
+.flash-item-card:hover .flash-item-thumb img {
+  transform: scale(1.05);
+}
+
+/* Glassmorphism Header */
+.shop-header {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+}
+
+/* Button & interactive animations */
+.primary-button, .buy-now-btn, .save-voucher-btn, .shop-search-box button {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.primary-button:active, .buy-now-btn:active, .save-voucher-btn:active, .shop-search-box button:active {
+  transform: scale(0.96) !important;
+}
+
+/* Category adjustments */
+.category-chip {
+  border-radius: 16px !important;
+  border: 1px solid var(--border) !important;
+  margin: 4px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.category-chip:hover {
+  transform: translateY(-4px);
+  border-color: var(--primary) !important;
+  box-shadow: var(--shadow-md) !important;
+  background: #fff !important;
+}
+.category-chip:hover .category-icon-placeholder {
+  transform: scale(1.1) rotate(5deg);
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+.category-icon-placeholder {
+  transition: all 0.3s ease;
 }
