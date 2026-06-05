@@ -31,7 +31,15 @@ const addToCart = async (userId, productId, quantity, replace = false, color = n
 };
 
 const getMyCart = async (userId) => {
-  return Cart.findOne({ userId }).populate("items.productId");
+  const cart = await Cart.findOne({ userId }).populate("items.productId");
+  if (cart && cart.items.length > 0) {
+    const originalLength = cart.items.length;
+    cart.items = cart.items.filter(item => item.productId !== null);
+    if (cart.items.length !== originalLength) {
+      await cart.save();
+    }
+  }
+  return cart;
 };
 
 const removeFromCart = async (userId, productId, color = null) => {

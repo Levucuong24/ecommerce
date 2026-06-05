@@ -166,6 +166,10 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
       });
       if (response.ok) {
         const data = await response.json();
+        if (data && Array.isArray(data.items)) {
+          // Lọc bỏ các sản phẩm đã bị xóa khỏi hệ thống (productId === null) để tránh crash
+          data.items = data.items.filter(item => item.productId !== null);
+        }
         setCart(data);
       }
     } catch (error) {
