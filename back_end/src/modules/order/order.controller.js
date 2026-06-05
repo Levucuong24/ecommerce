@@ -12,7 +12,7 @@ const getOrderDetail = asyncHandler(async (req, res) => {
 });
 
 const createOrder = asyncHandler(async (req, res) => {
-  const { addressSnapshot, paymentMethod, selectedVoucherId } = req.body;
+  const { addressSnapshot, paymentMethod, selectedVoucherId, useCoins } = req.body;
   
   if (!addressSnapshot || !addressSnapshot.fullName || !addressSnapshot.phone || !addressSnapshot.detail) {
     return res.status(400).json({ message: "Vui lòng nhập đầy đủ thông tin giao hàng (tên, số điện thoại, địa chỉ chi tiết)" });
@@ -22,7 +22,8 @@ const createOrder = asyncHandler(async (req, res) => {
     req.user.id,
     addressSnapshot,
     paymentMethod,
-    selectedVoucherId
+    selectedVoucherId,
+    useCoins
   );
   
   res.status(201).json(data);

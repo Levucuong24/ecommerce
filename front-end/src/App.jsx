@@ -17,7 +17,7 @@ import VoucherPage from "./features/home/VoucherPage";
 import OrderHistoryPage from "./features/shop/OrderHistoryPage";
 import ProfilePage from "./features/shop/ProfilePage";
 import { clearAuthSession, getAuthUser, saveAuthSession, getAuthToken } from "./utils/authStorage";
-import { DATA_EVENTS, emitDataChanged } from "./utils/realtimeEvents";
+import { DATA_EVENTS, emitDataChanged, subscribeDataChanged } from "./utils/realtimeEvents";
 import ChatWidget from "./components/ChatWidget";
 import NotFound from "./components/NotFound";
 
@@ -49,6 +49,59 @@ function App() {
   const [messageType, setMessageType] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeChatStore, setActiveChatStore] = useState(null);
+  const [showCheckInModal, setShowCheckInModal] = useState(false);
+  const [coinsStatus, setCoinsStatus] = useState({ coins: 0, checkedInToday: false });
+
+  const fetchCoinsStatus = async () => {
+    if (!user) return;
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+      const res = await fetch(`${apiUrl}/users/coins-status`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCoinsStatus(data);
+      }
+    } catch (err) {
+      console.error("Lỗi lấy trạng thái xu:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchCoinsStatus();
+      const unsubscribe = subscribeDataChanged((event) => {
+        if (event.type === DATA_EVENTS.USERS) {
+          fetchCoinsStatus();
+        }
+      });
+      return () => unsubscribe();
+    }
+  }, [user]);
+
+  const handleCheckIn = async () => {
+    try {
+      const token = getAuthToken();
+      const res = await fetch(`${apiUrl}/users/check-in`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCoinsStatus({ coins: data.coins, checkedInToday: true });
+        alert(`Chúc mừng! Bạn đã điểm danh thành công và nhận được ${data.coinsAwarded} xu! 🪙`);
+        emitDataChanged(DATA_EVENTS.USERS);
+      } else {
+        const err = await res.json();
+        alert(err.message || "Điểm danh thất bại");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Lỗi hệ thống khi điểm danh");
+    }
+  };
 
   const refreshUserProfile = async () => {
     const token = getAuthToken();
@@ -516,6 +569,242 @@ function App() {
         />
       </Routes>
       <ChatWidget activeStore={activeChatStore} onClose={() => setActiveChatStore(null)} currentUser={user} />
+
+      {/* Nút nổi Điểm danh nhận xu */}
+      {user && (
+        <button
+          onClick={() => setShowCheckInModal(true)}
+          style={{
+            position: "fixed",
+            bottom: "100px",
+            right: "24px",
+            width: "56px",
+            height: "56px",
+            borderRadius: "50%",
+            background: "linear-gradient(135deg, #fbbf24 0%, #d97706 100%)",
+            border: "none",
+            boxShadow: "0 4px 15px rgba(217, 119, 6, 0.4)",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "26px",
+            zIndex: 999,
+            transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+            animation: coinsStatus.checkedInToday ? "none" : "pulseCheckIn 2s infinite",
+          }}
+          title="Điểm danh nhận xu hàng ngày"
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "scale(1.1) translateY(-3px)";
+            e.currentTarget.style.boxShadow = "0 6px 20px rgba(217, 119, 6, 0.5)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "scale(1) translateY(0)";
+            e.currentTarget.style.boxShadow = "0 4px 15px rgba(217, 119, 6, 0.4)";
+          }}
+        >
+          🪙
+        </button>
+      )}
+
+      {/* CSS Keyframes cho hiệu ứng nhấp nháy của nút */}
+      <style>{`
+        @keyframes pulseCheckIn {
+          0% { transform: scale(1); box-shadow: 0 4px 15px rgba(217, 119, 6, 0.4); }
+          50% { transform: scale(1.1); box-shadow: 0 4px 25px rgba(217, 119, 6, 0.7); }
+          100% { transform: scale(1); box-shadow: 0 4px 15px rgba(217, 119, 6, 0.4); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from { transform: translateY(30px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+      `}</style>
+
+      {/* Modal Điểm danh */}
+      {showCheckInModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            background: "rgba(15, 23, 42, 0.6)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10000,
+            animation: "fadeIn 0.2s ease-out"
+          }}
+          onClick={() => setShowCheckInModal(false)}
+        >
+          <div
+            style={{
+              background: "#ffffff",
+              borderRadius: "24px",
+              width: "420px",
+              padding: "30px",
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+              position: "relative",
+              textAlign: "center",
+              animation: "slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+              border: "1px solid rgba(226, 232, 240, 0.8)"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Nút đóng */}
+            <button
+              onClick={() => setShowCheckInModal(false)}
+              style={{
+                position: "absolute",
+                top: "16px",
+                right: "16px",
+                background: "none",
+                border: "none",
+                fontSize: "20px",
+                color: "#94a3b8",
+                cursor: "pointer",
+                transition: "color 0.2s"
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = "#475569"}
+              onMouseLeave={(e) => e.currentTarget.style.color = "#94a3b8"}
+            >
+              ✕
+            </button>
+
+            {/* Icon lớn */}
+            <div style={{ fontSize: "50px", marginBottom: "10px" }}>
+              🎁
+            </div>
+
+            <h3 style={{ fontSize: "1.4rem", fontWeight: "700", color: "#1e293b", margin: "0 0 8px 0" }}>
+              Điểm danh nhận xu hàng ngày
+            </h3>
+            
+            <p style={{ color: "#64748b", fontSize: "14px", margin: "0 0 24px 0" }}>
+              Tích lũy xu mỗi ngày để dùng trừ tiền trực tiếp vào đơn hàng lúc thanh toán!
+            </p>
+
+            {/* Grid 7 ngày */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "8px", marginBottom: "26px" }}>
+              {(() => {
+                const days = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+                const todayIndex = (new Date().getDay() + 6) % 7; // Monday = 0, Sunday = 6
+                
+                return days.map((day, idx) => {
+                  const isChecked = idx < todayIndex || (idx === todayIndex && coinsStatus.checkedInToday);
+                  const isToday = idx === todayIndex;
+                  
+                  return (
+                    <div
+                      key={day}
+                      style={{
+                        background: isChecked 
+                          ? "linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)" 
+                          : isToday 
+                            ? "#fff" 
+                            : "#f8fafc",
+                        border: isChecked 
+                          ? "1.5px solid #fbbf24" 
+                          : isToday 
+                            ? "1.5px solid var(--primary)" 
+                            : "1.5px solid #e2e8f0",
+                        borderRadius: "12px",
+                        padding: "10px 0",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: "6px",
+                        position: "relative",
+                        boxShadow: isToday ? "0 4px 6px -1px rgba(99, 102, 241, 0.15)" : "none"
+                      }}
+                    >
+                      <span style={{ fontSize: "11px", fontWeight: "600", color: isChecked ? "#b45309" : isToday ? "var(--primary)" : "#64748b" }}>
+                        {day}
+                      </span>
+                      <span style={{ fontSize: "16px" }}>
+                        {isChecked ? "✅" : "🪙"}
+                      </span>
+                      {isToday && !coinsStatus.checkedInToday && (
+                        <span style={{
+                          position: "absolute",
+                          bottom: "-6px",
+                          background: "var(--primary)",
+                          color: "#fff",
+                          fontSize: "8px",
+                          fontWeight: "700",
+                          padding: "1px 4px",
+                          borderRadius: "4px",
+                          whiteSpace: "nowrap"
+                        }}>
+                          Hôm nay
+                        </span>
+                      )}
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+
+            {/* Số dư xu hiện tại */}
+            <div style={{
+              background: "#f8fafc",
+              borderRadius: "16px",
+              padding: "12px 20px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "24px",
+              border: "1px solid #e2e8f0"
+            }}>
+              <span style={{ color: "#64748b", fontSize: "14px", fontWeight: "500" }}>Số xu hiện có:</span>
+              <span style={{ color: "#d97706", fontSize: "18px", fontWeight: "700", display: "flex", alignItems: "center", gap: "4px" }}>
+                🪙 {new Intl.NumberFormat("vi-VN").format(coinsStatus.coins)} xu
+              </span>
+            </div>
+
+            {/* Nút Điểm danh */}
+            <button
+              disabled={coinsStatus.checkedInToday}
+              onClick={handleCheckIn}
+              style={{
+                width: "100%",
+                padding: "14px",
+                borderRadius: "16px",
+                background: coinsStatus.checkedInToday 
+                  ? "#e2e8f0" 
+                  : "linear-gradient(135deg, var(--primary) 0%, #4f46e5 100%)",
+                color: coinsStatus.checkedInToday ? "#94a3b8" : "#ffffff",
+                border: "none",
+                fontWeight: "700",
+                fontSize: "16px",
+                cursor: coinsStatus.checkedInToday ? "not-allowed" : "pointer",
+                boxShadow: coinsStatus.checkedInToday ? "none" : "0 10px 15px -3px rgba(99, 102, 241, 0.3)",
+                transition: "all 0.2s"
+              }}
+              onMouseEnter={(e) => {
+                if (!coinsStatus.checkedInToday) {
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow = "0 12px 20px -3px rgba(99, 102, 241, 0.4)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!coinsStatus.checkedInToday) {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow = "0 10px 15px -3px rgba(99, 102, 241, 0.3)";
+                }
+              }}
+            >
+              {coinsStatus.checkedInToday ? "Đã điểm danh hôm nay" : "Điểm danh ngay (Nhận 200 xu)"}
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

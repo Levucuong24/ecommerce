@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Logo from "../../components/Logo";
 import { getAuthToken } from "../../utils/authStorage";
 import { imageMap, mockVouchers } from "../home/utils";
+import { DATA_EVENTS, emitDataChanged } from "../../utils/realtimeEvents";
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -24,6 +25,28 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
   const [addressDetail, setAddressDetail] = useState("");
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
   const [showVoucherModal, setShowVoucherModal] = useState(false);
+  const [userCoins, setUserCoins] = useState(0);
+  const [useCoins, setUseCoins] = useState(false);
+
+  useEffect(() => {
+    const fetchUserCoins = async () => {
+      if (!user) return;
+      try {
+        const response = await fetch(`${apiUrl}/users/coins-status`, {
+          headers: {
+            Authorization: `Bearer ${getAuthToken()}`,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setUserCoins(data.coins || 0);
+        }
+      } catch (error) {
+        console.error("Lỗi khi tải số xu:", error);
+      }
+    };
+    fetchUserCoins();
+  }, [user]);
 
   const handleCheckout = async () => {
     if (!fullName.trim() || !phone.trim() || !addressDetail.trim()) {
@@ -48,6 +71,7 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
           },
           paymentMethod: "COD",
           selectedVoucherId: selectedVoucherId || undefined,
+          useCoins,
         }),
       });
 
@@ -57,6 +81,7 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
           const updated = saved.filter(id => id !== selectedVoucherId);
           localStorage.setItem("savedVouchers", JSON.stringify(updated));
         }
+        emitDataChanged(DATA_EVENTS.USERS);
         alert("Đặt hàng thành công!");
         navigate("/orders/history");
       } else {
@@ -356,6 +381,8 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
   const subtotal = calculateSubtotal();
   const discount = calculateDiscount(subtotal);
   const total = subtotal - discount > 0 ? subtotal - discount : 0;
+  const coinsDiscount = useCoins ? Math.min(userCoins, total) : 0;
+  const finalTotal = total - coinsDiscount;
 
   const formatPriceLocal = (price) => {
     return formatPrice(price);
@@ -548,6 +575,41 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
                 </div>
               )}
 
+              {coinsDiscount > 0 && (
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "15px", color: "#d97706" }}>
+                  <span>Giảm giá bằng xu:</span>
+                  <span>-{formatPrice(coinsDiscount)}đ</span>
+                </div>
+              )}
+
+              {userCoins > 0 && (
+                <div 
+                  style={{ 
+                    marginBottom: "20px", 
+                    paddingBottom: "20px", 
+                    borderBottom: "1px dashed #eee",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    cursor: "pointer"
+                  }}
+                  onClick={() => setUseCoins(!useCoins)}
+                >
+                  <input
+                    type="checkbox"
+                    checked={useCoins}
+                    onChange={(e) => setUseCoins(e.target.checked)}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{ cursor: "pointer", width: "16px", height: "16px" }}
+                  />
+                  <div style={{ fontSize: "13px", color: "#333", fontWeight: "500", display: "flex", alignItems: "center", gap: "4px" }}>
+                    <span>Dùng</span>
+                    <span style={{ color: "#d97706", fontWeight: "bold" }}>🪙 {formatPrice(userCoins)} xu</span>
+                    <span>để giảm {formatPrice(Math.min(userCoins, total))}đ</span>
+                  </div>
+                </div>
+              )}
+
               <div style={{ marginBottom: "20px", paddingBottom: "20px", borderBottom: "1px dashed #eee" }}>
                 <h4 style={{ margin: "0 0 12px 0", fontSize: "14px", fontWeight: "600", color: "#333" }}>Thông Tin Giao Hàng</h4>
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -577,7 +639,7 @@ function CartPage({ user, onLogout, onOpenLogin, onBackHome }) {
 
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px", fontWeight: "bold", fontSize: "18px", color: "var(--primary)" }}>
                 <span>Tổng cộng:</span>
-                <span>{formatPrice(total)}đ</span>
+                <span>{formatPrice(finalTotal)}đ</span>
               </div>
               <button 
                 className="primary-btn" 

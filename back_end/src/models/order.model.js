@@ -36,6 +36,7 @@ const orderSchema = new mongoose.Schema(
     commissionAmount: { type: Number, default: 0 },
     storeRevenue: { type: Number, default: 0 },
     voucherId: { type: String, default: null },
+    coinsUsed: { type: Number, default: 0 },
     createdAt: { type: Date, default: Date.now },
   },
   { versionKey: false }

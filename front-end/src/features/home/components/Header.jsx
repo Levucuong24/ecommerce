@@ -14,12 +14,30 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
   const [likedCount, setLikedCount] = useState(0);
   const [cartCount, setCartCount] = useState(0);
   const [cart, setCart] = useState(null);
+  const [userCoins, setUserCoins] = useState(0);
+
+  const fetchCoinsCount = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/users/coins-status`, {
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUserCoins(data.coins || 0);
+      }
+    } catch (error) {
+      console.error("Lỗi khi tải số lượng xu:", error);
+    }
+  };
 
   useEffect(() => {
     if (user) {
       fetchNotifications();
       fetchLikedCount();
       fetchCartCount();
+      fetchCoinsCount();
       
       // Lắng nghe sự kiện dữ liệu thay đổi để cập nhật thông báo, yêu thích và giỏ hàng
       const unsubscribe = subscribeDataChanged((event) => {
@@ -28,6 +46,9 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
           fetchLikedCount();
           fetchCartCount();
         }
+        if (event.type === DATA_EVENTS.USERS) {
+          fetchCoinsCount();
+        }
       });
 
       // Thiết lập polling mỗi 10 giây
@@ -35,6 +56,7 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
         fetchNotifications();
         fetchLikedCount();
         fetchCartCount();
+        fetchCoinsCount();
       }, 10000);
       return () => {
         unsubscribe();
@@ -228,31 +250,52 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
           </div>
           <span>Ho tro</span>
           {user ? (
-            <div className="user-dropdown-wrapper">
-              <span className="shop-login-link" style={{ cursor: "pointer" }}>
-                Hi, {user.name}
-              </span>
-              <div className="user-dropdown-popup">
-                <button type="button" onClick={() => navigate("/profile")} className="admin-dash-btn">
-                  Hồ sơ của tôi
-                </button>
-                <button type="button" onClick={() => navigate("/orders/history")} className="admin-dash-btn">
-                  Đơn mua của tôi
-                </button>
-                <button type="button" onClick={() => navigate("/liked-products")} className="admin-dash-btn">
-                  Sản phẩm yêu thích {likedCount > 0 && <span style={{ color: "var(--primary)", fontWeight: "bold" }}>({likedCount})</span>}
-                </button>
-                <button type="button" onClick={() => navigate("/following-shops")} className="admin-dash-btn">
-                  Shop đang theo dõi
-                </button>
-                {(user.role === "admin" || user.role === "staff") && (
-                  <button type="button" onClick={openDashboard} className="admin-dash-btn">
-                    {user.role === "admin" ? "Quan tri he thong" : "Trang Staff"}
+            <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+              <div 
+                style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: "4px", 
+                  background: "rgba(245, 158, 11, 0.1)", 
+                  padding: "4px 10px", 
+                  borderRadius: "20px", 
+                  border: "1px solid rgba(245, 158, 11, 0.25)",
+                  fontSize: "12px",
+                  fontWeight: "600",
+                  color: "#d97706",
+                  userSelect: "none"
+                }}
+                title="Số xu tích lũy của bạn"
+              >
+                <span>🪙</span>
+                <span>{new Intl.NumberFormat("vi-VN").format(userCoins)} Xu</span>
+              </div>
+              <div className="user-dropdown-wrapper">
+                <span className="shop-login-link" style={{ cursor: "pointer" }}>
+                  Hi, {user.name}
+                </span>
+                <div className="user-dropdown-popup">
+                  <button type="button" onClick={() => navigate("/profile")} className="admin-dash-btn">
+                    Hồ sơ của tôi
                   </button>
-                )}
-                <button type="button" onClick={onLogout} className="logout-btn">
-                  Dang xuat
-                </button>
+                  <button type="button" onClick={() => navigate("/orders/history")} className="admin-dash-btn">
+                    Đơn mua của tôi
+                  </button>
+                  <button type="button" onClick={() => navigate("/liked-products")} className="admin-dash-btn">
+                    Sản phẩm yêu thích {likedCount > 0 && <span style={{ color: "var(--primary)", fontWeight: "bold" }}>({likedCount})</span>}
+                  </button>
+                  <button type="button" onClick={() => navigate("/following-shops")} className="admin-dash-btn">
+                    Shop đang theo dõi
+                  </button>
+                  {(user.role === "admin" || user.role === "staff") && (
+                    <button type="button" onClick={openDashboard} className="admin-dash-btn">
+                      {user.role === "admin" ? "Quan tri he thong" : "Trang Staff"}
+                    </button>
+                  )}
+                  <button type="button" onClick={onLogout} className="logout-btn">
+                    Dang xuat
+                  </button>
+                </div>
               </div>
             </div>
           ) : (

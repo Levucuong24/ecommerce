@@ -17,8 +17,20 @@ const updateRole = asyncHandler(async (req, res) => {
     res.json(data);
 });
 
+const checkIn = asyncHandler(async (req, res) => {
+    const data = await userService.checkIn(req.user.id);
+    res.json(data);
+});
+
+const getCoinsStatus = asyncHandler(async (req, res) => {
+    const data = await userService.getCoinsStatus(req.user.id);
+    res.json(data);
+});
+
 module.exports = {
   getUsers: listUsers,
   getUserById: getUserDetail,
   updateRole,
+  checkIn,
+  getCoinsStatus,
 };

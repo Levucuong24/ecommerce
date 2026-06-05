@@ -4,6 +4,7 @@ const Cart = require("../../models/cart.model");
 const Product = require("../../models/product.model");
 const Store = require("../../models/store.model");
 const Coupon = require("../../models/coupon.model");
+const User = require("../../models/user.model");
 const { listResources, getResourceById } = require("../resource/resource.service");
 
 const getOrders = async (query) => listResources(Order, query);
@@ -20,7 +21,7 @@ const getStoreOrders = async (userId) => {
   return Order.find({ storeId: store._id }).populate("userId").sort({ createdAt: -1 });
 };
 
-const createOrder = async (userId, addressSnapshot, paymentMethod, selectedVoucherId) => {
+const createOrder = async (userId, addressSnapshot, paymentMethod, selectedVoucherId, useCoins = false) => {
   const cart = await Cart.findOne({ userId }).populate("items.productId");
   if (!cart || cart.items.length === 0) {
     const error = new Error("Giỏ hàng của bạn đang trống");
@@ -218,10 +219,12 @@ const createOrder = async (userId, addressSnapshot, paymentMethod, selectedVouch
 
   const createdOrders = [];
   
-  // Create orders split by store
+  // Calculate total price of orders before coins
+  let overallTotalPriceAfterVoucher = 0;
+  const storeTotalPricesBeforeCoins = {};
+
   for (const storeId in storeGroups) {
     const storeSubtotal = storeSubtotals[storeId];
-    // Split discount proportionally or apply store-specific voucher discount
     let storeDiscount = 0;
     if (storeVoucherStoreId) {
       if (storeVoucherStoreId === storeId) {
@@ -231,11 +234,35 @@ const createOrder = async (userId, addressSnapshot, paymentMethod, selectedVouch
       storeDiscount = overallSubtotal > 0 ? (overallDiscount * storeSubtotal) / overallSubtotal : 0;
     }
     const storeTotalPrice = Math.max(0, Math.round(storeSubtotal - storeDiscount));
+    storeTotalPricesBeforeCoins[storeId] = storeTotalPrice;
+    overallTotalPriceAfterVoucher += storeTotalPrice;
+  }
+
+  // Calculate coins to use
+  let totalCoinsToUse = 0;
+  const user = await User.findById(userId);
+
+  if (useCoins && user && user.coins > 0) {
+    totalCoinsToUse = Math.min(user.coins, overallTotalPriceAfterVoucher);
+  }
+
+  // Create orders split by store
+  for (const storeId in storeGroups) {
+    const storeSubtotal = storeSubtotals[storeId];
+    const storeTotalPrice = storeTotalPricesBeforeCoins[storeId];
+    
+    let storeCoinsUsed = 0;
+    if (totalCoinsToUse > 0 && overallTotalPriceAfterVoucher > 0) {
+      storeCoinsUsed = Math.round((totalCoinsToUse * storeTotalPrice) / overallTotalPriceAfterVoucher);
+      storeCoinsUsed = Math.min(storeCoinsUsed, storeTotalPrice);
+    }
+    
+    const finalStoreTotalPrice = Math.max(0, storeTotalPrice - storeCoinsUsed);
 
     // Admin takes 5% commission from staff's sales
     const commissionRate = 0.05;
-    const commissionAmount = Math.round(storeTotalPrice * commissionRate);
-    const storeRevenue = storeTotalPrice - commissionAmount;
+    const commissionAmount = Math.round(finalStoreTotalPrice * commissionRate);
+    const storeRevenue = finalStoreTotalPrice - commissionAmount;
 
     const orderItems = storeGroups[storeId].map(item => {
       const product = item.productId;
@@ -270,7 +297,7 @@ const createOrder = async (userId, addressSnapshot, paymentMethod, selectedVouch
       storeId,
       items: orderItems,
       addressSnapshot,
-      totalPrice: storeTotalPrice,
+      totalPrice: finalStoreTotalPrice,
       paymentMethod: paymentMethod || "COD",
       paymentStatus: "pending",
       orderStatus: "pending",
@@ -278,11 +305,17 @@ const createOrder = async (userId, addressSnapshot, paymentMethod, selectedVouch
       commissionAmount,
       storeRevenue,
       voucherId: selectedVoucherId || null,
+      coinsUsed: storeCoinsUsed,
       createdAt: new Date(),
     });
 
     await newOrder.save();
     createdOrders.push(newOrder);
+  }
+
+  if (totalCoinsToUse > 0 && user) {
+    user.coins = Math.max(0, user.coins - totalCoinsToUse);
+    await user.save();
   }
 
   // Clear user cart
@@ -361,6 +394,15 @@ const updateOrderStatus = async (orderId, userId, role, status) => {
           coupon.isActive = true;
           await coupon.save();
         }
+      }
+    }
+
+    // Refund coins if applicable
+    if (order.coinsUsed && order.coinsUsed > 0) {
+      const user = await User.findById(order.userId);
+      if (user) {
+        user.coins = (user.coins || 0) + order.coinsUsed;
+        await user.save();
       }
     }
   }

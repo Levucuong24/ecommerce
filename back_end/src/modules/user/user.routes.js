@@ -5,8 +5,12 @@ const authorize = require("../../middleware/roleMiddleware");
 
 const router = express.Router();
 
-// Only admin can manage users
+// Authenticated user routes
 router.use(protect);
+router.post("/check-in", userController.checkIn);
+router.get("/coins-status", userController.getCoinsStatus);
+
+// Only admin can manage users
 router.use(authorize("admin"));
 
 router.get("/", userController.getUsers);
