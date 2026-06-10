@@ -38,31 +38,30 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
       fetchLikedCount();
       fetchCartCount();
       fetchCoinsCount();
-      
-      // Lắng nghe sự kiện dữ liệu thay đổi để cập nhật thông báo, yêu thích và giỏ hàng
-      const unsubscribe = subscribeDataChanged((event) => {
-        if (event.type === DATA_EVENTS.PRODUCTS) {
-          fetchNotifications();
-          fetchLikedCount();
-          fetchCartCount();
-        }
-        if (event.type === DATA_EVENTS.USERS) {
-          fetchCoinsCount();
-        }
-      });
+    }
+  }, [user]);
 
-      // Thiết lập polling mỗi 10 giây
-      const interval = setInterval(() => {
-        fetchNotifications();
-        fetchLikedCount();
+  useEffect(() => {
+    const unsubscribeLiked = subscribeDataChanged(DATA_EVENTS.LIKED_PRODUCTS_CHANGED, () => {
+      if (user) fetchLikedCount();
+    });
+
+    const unsubscribeCart = subscribeDataChanged(DATA_EVENTS.CART_CHANGED, () => {
+      if (user) {
         fetchCartCount();
         fetchCoinsCount();
-      }, 10000);
-      return () => {
-        unsubscribe();
-        clearInterval(interval);
-      };
-    }
+      }
+    });
+
+    const unsubscribeUser = subscribeDataChanged(DATA_EVENTS.USER_COINS_CHANGED, () => {
+      if (user) fetchCoinsCount();
+    });
+
+    return () => {
+      unsubscribeLiked();
+      unsubscribeCart();
+      unsubscribeUser();
+    };
   }, [user]);
 
   const fetchNotifications = async () => {
@@ -74,8 +73,8 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
       });
       if (response.ok) {
         const data = await response.json();
-        setNotifications(data);
-        setUnreadCount(data.filter((n) => !n.isRead).length);
+        setNotifications(data.items || []);
+        setUnreadCount(data.items?.filter((n) => !n.isRead).length || 0);
       }
     } catch (error) {
       console.error("Lỗi khi tải thông báo:", error);
@@ -84,14 +83,14 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
 
   const fetchLikedCount = async () => {
     try {
-      const response = await fetch(`${apiUrl}/products/liked`, {
+      const response = await fetch(`${apiUrl}/products/liked-count`, {
         headers: {
           Authorization: `Bearer ${getAuthToken()}`,
         },
       });
       if (response.ok) {
         const data = await response.json();
-        setLikedCount(data.total || 0);
+        setLikedCount(data.count || 0);
       }
     } catch (error) {
       console.error("Lỗi khi tải số lượng yêu thích:", error);
@@ -108,53 +107,50 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
       if (response.ok) {
         const data = await response.json();
         setCart(data);
-        const totalItems = data.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0;
-        setCartCount(totalItems);
+        const count = data.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+        setCartCount(count);
       }
     } catch (error) {
-      console.error("Lỗi khi tải số lượng giỏ hàng:", error);
-    }
-  };
-
-  const handleMarkAsRead = async (id) => {
-    try {
-      const response = await fetch(`${apiUrl}/notifications/${id}/read`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${getAuthToken()}`,
-        },
-      });
-      if (response.ok) {
-        setNotifications((prev) =>
-          prev.map((n) => (n._id === id ? { ...n, isRead: true } : n))
-        );
-        setUnreadCount((prev) => Math.max(0, prev - 1));
-      }
-    } catch (error) {
-      console.error("Lỗi khi đánh dấu đã đọc:", error);
+      console.error("Lỗi khi tải giỏ hàng:", error);
     }
   };
 
   const handleMarkAllRead = async () => {
     try {
       const response = await fetch(`${apiUrl}/notifications/mark-all-read`, {
-        method: "PATCH",
+        method: "PUT",
         headers: {
           Authorization: `Bearer ${getAuthToken()}`,
         },
       });
       if (response.ok) {
-        setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-        setUnreadCount(0);
+        fetchNotifications();
       }
     } catch (error) {
-      console.error("Lỗi khi đánh dấu tất cả đã đọc:", error);
+      console.error("Lỗi khi đánh dấu đọc tất cả:", error);
     }
   };
 
-  const handleSearch = (event) => {
-    event?.preventDefault();
-    onSearch?.(query);
+  const handleMarkAsRead = async (id) => {
+    try {
+      const response = await fetch(`${apiUrl}/notifications/${id}/read`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+      });
+      if (response.ok) {
+        fetchNotifications();
+      }
+    } catch (error) {
+      console.error("Lỗi khi đánh dấu đọc thông báo:", error);
+    }
+  };
+
+  const handleSearch = () => {
+    if (onSearch) {
+      onSearch(query);
+    }
   };
 
   const handleKeyDown = (event) => {
@@ -168,10 +164,10 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
       onOpenLogin();
       return;
     }
-    if (user.role === "admin") {
-      navigate("/admin");
+    if (user.role === "seller" || user.role === "admin") {
+      navigate("/seller");
     } else {
-      navigate("/staff");
+      navigate("/seller/register");
     }
   };
 
@@ -187,27 +183,57 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
     <header className="shop-header">
       <div className="shop-header-top">
         <div className="shop-top-links">
-          <span onClick={handleSellerChannelClick} style={{ cursor: "pointer" }}>Kênh người dùng</span>
-          <span>Tai ung dung</span>
-          <span>Ket noi</span>
+          <span className="top-link" onClick={handleSellerChannelClick}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="top-link-icon">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            Kênh Người Bán
+          </span>
+          <span className="top-divider">|</span>
+          <span className="top-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="top-link-icon">
+              <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+              <line x1="12" y1="18" x2="12.01" y2="18"></line>
+            </svg>
+            Tải Ứng Dụng
+          </span>
+          <span className="top-divider">|</span>
+          <span className="top-link">
+            Kết nối
+            <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="top-social-icon" aria-label="Facebook">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+              </svg>
+            </a>
+            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="top-social-icon" aria-label="Instagram">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+              </svg>
+            </a>
+          </span>
         </div>
+
         <div className="shop-top-links">
           <div className="notification-wrapper">
-            <span className="notification-trigger">
-              Thong bao
+            <span className="notification-trigger top-link">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="top-link-icon">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              Thông Báo
               {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
             </span>
-            <div className="notification-popup">
+            <div className="notification-popup glass">
               {user ? (
                 <>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
-                    <h3 style={{ margin: 0, fontSize: "1.1rem" }}>Thông báo mới nhận</h3>
+                  <div className="popup-header">
+                    <h3>Thông báo mới nhận</h3>
                     {unreadCount > 0 && (
-                      <button 
-                        onClick={handleMarkAllRead}
-                        style={{ background: "none", color: "var(--primary)", fontSize: "0.85rem", fontWeight: "500" }}
-                      >
-                        Đánh dấu tất cả đã đọc
+                      <button onClick={handleMarkAllRead} className="popup-action-btn">
+                        Đánh dấu đã đọc tất cả
                       </button>
                     )}
                   </div>
@@ -219,88 +245,93 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
                           className={`notification-item ${notif.isRead ? "" : "unread"}`}
                           onClick={() => !notif.isRead && handleMarkAsRead(notif._id)}
                         >
-                          <h4>{notif.title}</h4>
-                          <p>{notif.message}</p>
-                          <span className="time">{new Date(notif.createdAt).toLocaleString("vi-VN")}</span>
+                          <div className="notif-dot"></div>
+                          <div className="notif-content">
+                            <h4>{notif.title}</h4>
+                            <p>{notif.message}</p>
+                            <span className="time">{new Date(notif.createdAt).toLocaleString("vi-VN")}</span>
+                          </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div style={{ textAlign: "center", padding: "20px 0" }}>
-                      <img src="/images/logothongbao.png" alt="Thong bao" className="notification-empty-img" />
+                    <div className="popup-empty-state">
+                      <img src="/images/logothongbao.png" alt="Không có thông báo" className="notification-empty-img" />
                       <p>Chưa có thông báo mới</p>
                     </div>
                   )}
                 </>
               ) : (
-                <>
-                  <img src="/images/logothongbao.png" alt="Thong bao" className="notification-empty-img" />
-                  <p>Dang nhap de xem Thong bao</p>
+                <div className="popup-empty-state">
+                  <img src="/images/logothongbao.png" alt="Đăng nhập" className="notification-empty-img" />
+                  <p>Đăng nhập để xem thông báo</p>
                   <div className="notification-actions">
                     <button type="button" onClick={onOpenLogin} className="notification-login-btn">
-                      Dang nhap
+                      Đăng nhập
                     </button>
                     <button type="button" className="notification-register-btn">
-                      Dang ky
+                      Đăng ký
                     </button>
                   </div>
-                </>
+                </div>
               )}
             </div>
           </div>
-          <span>Ho tro</span>
+          
+          <span className="top-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="top-link-icon">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            Hỗ Trợ
+          </span>
+          
           {user ? (
-            <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-              <div 
-                style={{ 
-                  display: "flex", 
-                  alignItems: "center", 
-                  gap: "4px", 
-                  background: "rgba(245, 158, 11, 0.1)", 
-                  padding: "4px 10px", 
-                  borderRadius: "20px", 
-                  border: "1px solid rgba(245, 158, 11, 0.25)",
-                  fontSize: "12px",
-                  fontWeight: "600",
-                  color: "#d97706",
-                  userSelect: "none"
-                }}
-                title="Số xu tích lũy của bạn"
-              >
-                <span>🪙</span>
+            <div className="user-profile-nav">
+              <div className="user-coins-pill" title="Số xu tích lũy của bạn">
+                <span className="coin-icon">🪙</span>
                 <span>{new Intl.NumberFormat("vi-VN").format(userCoins)} Xu</span>
               </div>
               <div className="user-dropdown-wrapper">
-                <span className="shop-login-link" style={{ cursor: "pointer" }}>
+                <span className="shop-login-link user-greeting">
+                  <div className="avatar-small">
+                    {user.avatar ? (
+                      <img src={user.avatar} alt={user.name} />
+                    ) : (
+                      user.name.charAt(0).toUpperCase()
+                    )}
+                  </div>
                   Hi, {user.name}
                 </span>
-                <div className="user-dropdown-popup">
-                  <button type="button" onClick={() => navigate("/profile")} className="admin-dash-btn">
+                <div className="user-dropdown-popup glass">
+                  <button type="button" onClick={() => navigate("/profile")} className="dropdown-item">
                     Hồ sơ của tôi
                   </button>
-                  <button type="button" onClick={() => navigate("/orders/history")} className="admin-dash-btn">
+                  <button type="button" onClick={() => navigate("/orders/history")} className="dropdown-item">
                     Đơn mua của tôi
                   </button>
-                  <button type="button" onClick={() => navigate("/liked-products")} className="admin-dash-btn">
-                    Sản phẩm yêu thích {likedCount > 0 && <span style={{ color: "var(--primary)", fontWeight: "bold" }}>({likedCount})</span>}
+                  <button type="button" onClick={() => navigate("/liked-products")} className="dropdown-item">
+                    Sản phẩm yêu thích {likedCount > 0 && <span className="item-count">({likedCount})</span>}
                   </button>
-                  <button type="button" onClick={() => navigate("/following-shops")} className="admin-dash-btn">
+                  <button type="button" onClick={() => navigate("/following-shops")} className="dropdown-item">
                     Shop đang theo dõi
                   </button>
                   {(user.role === "admin" || user.role === "staff") && (
-                    <button type="button" onClick={openDashboard} className="admin-dash-btn">
-                      {user.role === "admin" ? "Quan tri he thong" : "Trang Staff"}
+                    <button type="button" onClick={openDashboard} className="dropdown-item admin-item">
+                      {user.role === "admin" ? "Quản Trị Hệ Thống" : "Trang Nhân Viên"}
                     </button>
                   )}
-                  <button type="button" onClick={onLogout} className="logout-btn">
-                    Dang xuat
+                  <div className="dropdown-divider"></div>
+                  <button type="button" onClick={onLogout} className="dropdown-item logout-item">
+                    Đăng xuất
                   </button>
                 </div>
               </div>
             </div>
           ) : (
-            <button type="button" className="shop-login-link" onClick={onOpenLogin}>
-              Login
+            <button type="button" className="shop-login-link font-bold" onClick={onOpenLogin}>
+              Đăng Nhập
             </button>
           )}
         </div>
@@ -311,37 +342,43 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
 
         <div className="shop-search-area">
           <div className="shop-search-box">
-            <input
-              type="text"
-              placeholder="Tim san pham, shop va uu dai hom nay"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              onKeyDown={handleKeyDown}
-            />
+            <div className="search-input-wrapper">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="search-icon">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input
+                type="text"
+                placeholder="Tìm sản phẩm, thương hiệu và ưu đãi..."
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                onKeyDown={handleKeyDown}
+              />
+            </div>
             <button type="button" onClick={handleSearch}>
-              Tim kiem
+              Tìm kiếm
             </button>
           </div>
 
           <div className="shop-keywords">
             <span onClick={() => { setQuery("Tai nghe"); onSearch?.("Tai nghe"); }}>Tai nghe</span>
-            <span onClick={() => { setQuery("Dien gia dung"); onSearch?.("Dien gia dung"); }}>Dien gia dung</span>
-            <span onClick={() => { setQuery("May tinh bang"); onSearch?.("May tinh bang"); }}>May tinh bang</span>
+            <span onClick={() => { setQuery("Điện gia dụng"); onSearch?.("Điện gia dụng"); }}>Điện gia dụng</span>
+            <span onClick={() => { setQuery("Máy tính bảng"); onSearch?.("Máy tính bảng"); }}>Máy tính bảng</span>
             <span onClick={() => { setQuery("Deal 0h"); onSearch?.("Deal 0h"); }}>Deal 0h</span>
-            <span onClick={() => { setQuery("Thoi trang nu"); onSearch?.("Thoi trang nu"); }}>Thoi trang nu</span>
+            <span onClick={() => { setQuery("Thời trang nữ"); onSearch?.("Thời trang nữ"); }}>Thời trang nữ</span>
           </div>
         </div>
 
         <div className="shop-cart-wrapper">
-          <button type="button" className="shop-cart-pill" onClick={onOpenCart} aria-label="Gio hang">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <button type="button" className="shop-cart-pill" onClick={onOpenCart} aria-label="Giỏ hàng">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="9" cy="21" r="1"></circle>
               <circle cx="20" cy="21" r="1"></circle>
               <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
             </svg>
             {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
           </button>
-          <div className="cart-popup">
+          <div className="cart-popup glass">
             {user && cart && cart.items?.length > 0 ? (
               <div className="cart-popup-content">
                 <div className="cart-popup-title">Sản Phẩm Mới Thêm</div>
@@ -355,7 +392,6 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
                       return item.productId?.discountPrice || item.productId?.price || 0;
                     })();
                     
-                    // Tìm ảnh của riêng màu sắc đó nếu có
                     let itemImg = item.productId?.images?.[0];
                     if (item.color && item.productId?.colors) {
                       const colorObj = item.productId.colors.find(c => c.name === item.color);
@@ -366,31 +402,38 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
                     
                     return (
                       <div key={`${item.productId?._id}-${item.color || 'none'}`} className="cart-popup-item">
-                        <img src={itemImg || "/images/cart.png"} alt={item.productId?.name} />
+                        <div className="cart-popup-item-thumb">
+                          <img src={itemImg || "/images/cart.png"} alt={item.productId?.name} />
+                        </div>
                         <div className="cart-popup-item-info">
                           <div className="name">{item.productId?.name}</div>
-                          {item.color && (
-                            <div style={{ fontSize: "11px", color: "var(--primary)", background: "#fff5f5", padding: "1px 6px", borderRadius: "3px", display: "inline-block", marginTop: "2px", fontWeight: "600" }}>
-                              Màu: {item.color}
-                            </div>
-                          )}
-                          <div className="price-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "2px" }}>
-                            <div className="price" style={{ color: "var(--primary)", fontWeight: "500" }}>
-                              {new Intl.NumberFormat("vi-VN").format(price)}đ
-                            </div>
-                            <div className="quantity" style={{ color: "#888", fontSize: "12px" }}>x{item.quantity}</div>
+                          <div className="meta-row">
+                            {item.color && (
+                              <span className="color-tag">Màu: {item.color}</span>
+                            )}
+                            <span className="quantity">x{item.quantity}</span>
+                          </div>
+                          <div className="price">
+                            {new Intl.NumberFormat("vi-VN").format(price)}đ
                           </div>
                         </div>
                       </div>
                     );
                   })}
                 </div>
-                {cart.items.length > 5 && <div className="cart-popup-more">Và {cart.items.length - 5} sản phẩm khác</div>}
+                {cart.items.length > 5 && (
+                  <div className="cart-popup-more">Và {cart.items.length - 5} sản phẩm khác</div>
+                )}
+                <div className="cart-popup-footer">
+                  <button type="button" className="cart-popup-view-btn" onClick={onOpenCart}>
+                    Xem Giỏ Hàng
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="empty-cart-message">
-                <img src="/images/logochuacosanpham.png" alt="Chua co san pham" className="empty-cart-img" />
-                <p>Chua co san pham</p>
+                <img src="/images/logochuacosanpham.png" alt="Chưa có sản phẩm" className="empty-cart-img" />
+                <p>Chưa có sản phẩm trong giỏ hàng</p>
               </div>
             )}
           </div>

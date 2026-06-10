@@ -197,7 +197,7 @@ function HomePage({ onOpenLogin, onOpenCart, user, onLogout }) {
         {loading ? (
           <div className="loading-screen">
             <div className="loader"></div>
-            <p>Dang tai du lieu...</p>
+            <p>Đang tải dữ liệu...</p>
           </div>
         ) : (
           <>

@@ -2,6 +2,7 @@ import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 const categoryIcons = {
+  "Thời Thời Trang Nam": "👕",
   "Thời Trang Nam": "👕",
   "Điện Thoại & Phụ Kiện": "📱",
   "Thiết Bị Điện Tử": "🔌",
@@ -50,8 +51,8 @@ function CategoryList({ categories }) {
 
   const scroll = (direction) => {
     if (scrollRef.current) {
-      // Scroll by exactly one visible page/face
-      const scrollAmount = scrollRef.current.clientWidth;
+      // Scroll by clients width
+      const scrollAmount = scrollRef.current.clientWidth * 0.8;
       scrollRef.current.scrollBy({ 
         left: direction === 'left' ? -scrollAmount : scrollAmount, 
         behavior: "smooth" 
@@ -63,22 +64,24 @@ function CategoryList({ categories }) {
     return (
       <section className="category-strip">
         <div className="section-heading">
-          <h2>Danh mục</h2>
+          <h2>Danh mục nổi bật</h2>
         </div>
         <div className="empty-state">
-          <p>Chưa có danh mục nào.</p>
+          <p>Không có dữ liệu danh mục.</p>
         </div>
       </section>
     );
   }
 
   return (
-    <section className="category-strip category-carousel-container">
+    <section className="category-strip category-carousel-container animate-fade">
       <div className="section-heading">
-        <h2>Danh mục</h2>
+        <h2>Khám Phá Danh Mục</h2>
       </div>
+      
       <div className="category-carousel-wrapper">
         <button 
+          type="button"
           className="carousel-btn left-btn" 
           onClick={() => scroll('left')}
           aria-label="Scroll left"
@@ -92,7 +95,6 @@ function CategoryList({ categories }) {
               key={category._id} 
               className="category-chip"
               onClick={() => handleCategoryClick(category)}
-              style={{ cursor: 'pointer' }}
             >
               <div className="category-icon-placeholder">
                 {getCategoryIcon(category.name)}
@@ -103,6 +105,7 @@ function CategoryList({ categories }) {
         </div>
 
         <button 
+          type="button"
           className="carousel-btn right-btn" 
           onClick={() => scroll('right')}
           aria-label="Scroll right"
