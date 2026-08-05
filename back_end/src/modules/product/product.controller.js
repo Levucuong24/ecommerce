@@ -40,10 +40,16 @@ const toggleFlashSale = asyncHandler(async (req, res) => {
   res.json(updatedProduct);
 });
 
+const updateStock = asyncHandler(async (req, res) => {
+  const data = await productService.updateStock(req.params.id, req.body);
+  res.json(data);
+});
+
 module.exports = {
   getProducts: listProducts,
   getProductById: getProductDetail,
   createProduct,
+  updateStock,
   toggleLikeProduct,
   getLikedProducts,
   toggleFlashSale,

@@ -11,6 +11,7 @@ const notificationRoutes = require("../modules/notification/notification.routes"
 const resourceRoutes = require("../modules/resource/resource.routes");
 const chatRoutes = require("../modules/chat/chat.routes");
 const couponRoutes = require("../modules/coupon/coupon.routes");
+const inventoryRoutes = require("../modules/inventory/inventory.routes");
 
 const router = express.Router();
 
@@ -28,6 +29,7 @@ router.use("/stores", storeRoutes);
 router.use("/notifications", notificationRoutes);
 router.use("/chats", chatRoutes);
 router.use("/coupons", couponRoutes);
+router.use("/inventory", inventoryRoutes);
 router.use("/", resourceRoutes);
 
 module.exports = router;

@@ -1201,16 +1201,17 @@ a {
 .shop-search-box button {
   border-radius: 10px;
   padding: 10px 24px;
-  background: var(--primary);
+  background: var(--gradient-primary);
   color: #fff;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.9rem;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
 }
 
 .shop-search-box button:hover {
-  background: var(--primary-hover);
-  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
 }
 
 .shop-keywords {
@@ -1222,10 +1223,10 @@ a {
 
 .shop-keywords span {
   font-size: 0.72rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
   padding: 2px 10px;
   background: transparent;
   border: 1px solid transparent;
@@ -1235,24 +1236,24 @@ a {
 .shop-keywords span:hover {
   color: var(--primary);
   background: var(--primary-soft);
+  border-color: rgba(99, 102, 241, 0.2);
 }
 
 .shop-cart-pill {
-  border: 0;
-  padding: 12px;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  padding: 10px 16px;
   border-radius: 14px;
   background: var(--primary-soft);
   color: var(--primary);
   cursor: pointer;
   display: flex;
   align-items: center;
+  gap: 8px;
   justify-content: center;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  position: relative;
 }
 
 .shop-cart-pill:hover {
-  background: var(--primary);
   color: #fff;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
@@ -1294,56 +1295,79 @@ a {
   border: 1px solid var(--border);
   box-shadow: var(--shadow-md);
   margin-top: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.flash-sale-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--gradient-accent);
 }
 
 .flash-heading-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
 }
 
 .flash-heading-left h2 {
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   font-weight: 800;
   letter-spacing: -0.02em;
   margin: 0;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--primary) 100%);
+  background: var(--gradient-accent);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .countdown-timer {
   display: flex;
   align-items: center;
   gap: 6px;
+  background: rgba(255, 65, 108, 0.08);
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 65, 108, 0.2);
 }
 
 .timer-block {
-  background: var(--text-main);
+  background: var(--gradient-accent);
   color: #fff;
-  font-weight: 700;
-  font-size: 0.85rem;
-  padding: 4px 8px;
-  border-radius: 6px;
-  min-width: 28px;
+  font-weight: 800;
+  font-size: 0.9rem;
+  padding: 5px 10px;
+  border-radius: 8px;
+  min-width: 32px;
   text-align: center;
+  box-shadow: 0 4px 10px rgba(255, 65, 108, 0.3);
 }
 
 .timer-separator {
-  font-weight: 700;
-  color: var(--text-main);
+  font-weight: 800;
+  color: var(--accent);
 }
 
 .flash-view-all {
-  font-size: 0.88rem;
-  font-weight: 600;
+  font-size: 0.9rem;
+  font-weight: 700;
   color: var(--primary);
-  transition: color 0.2s;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .flash-view-all:hover {
-  color: var(--primary-hover);
-  text-decoration: underline;
+  color: var(--accent);
+  transform: translateX(4px);
 }
 
 .flash-sale-grid {
@@ -1358,7 +1382,7 @@ a {
   overflow: hidden;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   flex-direction: column;
   cursor: pointer;
@@ -1366,9 +1390,9 @@ a {
 }
 
 .flash-item-card:hover {
-  transform: translateY(-6px);
-  border-color: var(--accent);
-  box-shadow: var(--shadow-lg);
+  transform: translateY(-8px);
+  border-color: rgba(255, 65, 108, 0.4);
+  box-shadow: 0 20px 35px -10px rgba(255, 65, 108, 0.2);
 }
 
 .flash-item-thumb {
@@ -1377,35 +1401,35 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-main);
+  background: linear-gradient(180deg, #fff5f7 0%, #ffffff 100%);
   padding: 16px;
   overflow: hidden;
-  border-radius: 14px;
-  width: 100%;
+  border-radius: 16px;
+  margin: 8px;
 }
 
 .flash-item-thumb img {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
-  transition: transform 0.3s ease;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .flash-item-card:hover .flash-item-thumb img {
-  transform: scale(1.05);
+  transform: scale(1.08);
 }
 
 .flash-discount-badge {
   position: absolute;
   top: 12px;
   left: 12px;
-  background: var(--accent);
+  background: var(--gradient-accent);
   color: #fff;
   font-size: 0.72rem;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 6px;
-  box-shadow: 0 4px 8px rgba(225, 29, 72, 0.2);
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 99px;
+  box-shadow: 0 4px 12px rgba(255, 65, 108, 0.35);
   z-index: 1;
 }
 

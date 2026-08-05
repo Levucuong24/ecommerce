@@ -215,10 +215,29 @@ const getLikedProducts = async (userId) => {
   };
 };
 
+const updateStock = async (productId, { stock, delta }) => {
+  const product = await Product.findById(productId);
+  if (!product) {
+    const error = new Error("Product not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (typeof stock === "number") {
+    product.stock = Math.max(0, stock);
+  } else if (typeof delta === "number") {
+    product.stock = Math.max(0, (product.stock || 0) + delta);
+  }
+
+  await product.save();
+  return product;
+};
+
 module.exports = {
   getProducts,
   getProductById,
   createProduct,
+  updateStock,
   toggleFlashSale,
   toggleLikeProduct,
   getLikedProducts,

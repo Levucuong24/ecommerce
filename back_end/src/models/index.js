@@ -13,4 +13,5 @@ module.exports = {
   Store: require("./store.model"),
   Banner: require("./banner.model"),
   ChatMessage: require("./chatMessage.model"),
+  InventoryReceipt: require("./inventoryReceipt.model"),
 };

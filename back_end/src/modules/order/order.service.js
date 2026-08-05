@@ -334,8 +334,8 @@ const updateOrderStatus = async (orderId, userId, role, status) => {
     throw error;
   }
 
-  // If not admin, check authorization
-  if (role !== "admin") {
+  // If not admin or warehouse, check authorization
+  if (role !== "admin" && role !== "warehouse") {
     const isBuyer = order.userId.toString() === userId.toString();
     const isCancelRequest = status === "cancelled";
     const isPendingOrder = order.orderStatus === "pending";

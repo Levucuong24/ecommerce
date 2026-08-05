@@ -322,6 +322,11 @@ function Header({ user, onOpenLogin, onOpenCart, onLogout, onSearch }) {
                       {user.role === "admin" ? "Quản Trị Hệ Thống" : "Trang Nhân Viên"}
                     </button>
                   )}
+                  {(user.role === "admin" || user.role === "warehouse") && (
+                    <button type="button" onClick={() => navigate("/warehouse")} className="dropdown-item admin-item" style={{ color: "#6366f1", fontWeight: "700" }}>
+                      📦 Quản Lý Kho
+                    </button>
+                  )}
                   <div className="dropdown-divider"></div>
                   <button type="button" onClick={onLogout} className="dropdown-item logout-item">
                     Đăng xuất

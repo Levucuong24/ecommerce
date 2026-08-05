@@ -11,6 +11,7 @@ router.get("/liked", protect, productController.getLikedProducts);
 router.get("/:id", productController.getProductById);
 router.post("/:id/like", protect, productController.toggleLikeProduct);
 router.post("/:id/flash-sale", protect, authorize("staff", "admin"), productController.toggleFlashSale);
+router.patch("/:id/stock", protect, authorize("warehouse", "staff", "admin"), productController.updateStock);
 router.post("/", protect, authorize("staff", "admin"), productController.createProduct);
 
 module.exports = router;

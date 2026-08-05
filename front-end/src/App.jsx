@@ -16,6 +16,7 @@ import LikedProductsPage from "./features/shop/LikedProductsPage";
 import VoucherPage from "./features/home/VoucherPage";
 import OrderHistoryPage from "./features/shop/OrderHistoryPage";
 import ProfilePage from "./features/shop/ProfilePage";
+import WarehousePage from "./features/warehouse/WarehousePage";
 import { clearAuthSession, getAuthUser, saveAuthSession, getAuthToken } from "./utils/authStorage";
 import { DATA_EVENTS, emitDataChanged, subscribeDataChanged } from "./utils/realtimeEvents";
 import ChatWidget from "./components/ChatWidget";
@@ -23,7 +24,7 @@ import NotFound from "./components/NotFound";
 
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-const allowedRoles = new Set(["admin", "staff", "customer"]);
+const allowedRoles = new Set(["admin", "staff", "customer", "warehouse"]);
 
 const initialLoginData = {
   email: "",
@@ -302,6 +303,7 @@ function App() {
   const getDefaultRouteByRole = (role, userId) => {
     if (role === "admin") return "/admin";
     if (role === "staff") return "/staff";
+    if (role === "warehouse") return "/warehouse";
     return "/home";
   };
 
@@ -672,6 +674,16 @@ function App() {
           element={
             user && (user.role === "staff" || user.role === "customer") ? (
               <StaffPage user={user} handleLogout={handleLogout} refreshUserProfile={refreshUserProfile} />
+            ) : (
+              <Navigate to={user ? getDefaultRouteByRole(user.role) : "/auth"} replace />
+            )
+          }
+        />
+        <Route
+          path="/warehouse"
+          element={
+            user && (user.role === "warehouse" || user.role === "admin") ? (
+              <WarehousePage user={user} onLogout={handleLogout} />
             ) : (
               <Navigate to={user ? getDefaultRouteByRole(user.role) : "/auth"} replace />
             )

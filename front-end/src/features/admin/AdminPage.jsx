@@ -16,6 +16,8 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [inventoryReceipts, setInventoryReceipts] = useState([]);
+  const [previewImage, setPreviewImage] = useState(null);
 
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -30,6 +32,7 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
       else if (activeTab === "stores") fetchStores();
       else if (activeTab === "categories") fetchCategories();
       else if (activeTab === "orders") fetchOrders();
+      else if (activeTab === "inventory_approval") fetchInventoryReceipts();
       else fetchBanners();
     } else {
       setLoading(false);
@@ -191,6 +194,71 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
       alert(err.message);
     } finally {
       setUpdating(null);
+    }
+  };
+
+  const fetchInventoryReceipts = async () => {
+    setLoading(true);
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/inventory/receipts`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setInventoryReceipts(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error("Lỗi tải yêu cầu nhập kho:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApproveInventory = async (receiptId) => {
+    if (!window.confirm("Bạn có chắc chắn muốn PHÊ DUYỆT yêu cầu nhập kho này? (Tồn kho sản phẩm sẽ được tự động cộng thêm)")) return;
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/inventory/receipts/${receiptId}/approve`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        alert("🎉 Đã phê duyệt yêu cầu và tự động cập nhật tồn kho thành công!");
+        fetchInventoryReceipts();
+      } else {
+        const err = await response.json();
+        alert(`❌ Lỗi: ${err.message || "Phê duyệt thất bại"}`);
+      }
+    } catch (err) {
+      console.error("Lỗi duyệt nhập kho:", err);
+    }
+  };
+
+  const handleRejectInventory = async (receiptId) => {
+    const reason = prompt("Nhập lý do từ chối yêu cầu nhập kho này:", "Thông tin hình ảnh hoặc hóa đơn chưa khớp");
+    if (reason === null) return;
+
+    try {
+      const token = getAuthToken();
+      const response = await fetch(`${API_URL}/inventory/receipts/${receiptId}/reject`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reason }),
+      });
+      if (response.ok) {
+        alert("❌ Đã từ chối yêu cầu nhập kho!");
+        fetchInventoryReceipts();
+      }
+    } catch (err) {
+      console.error("Lỗi từ chối nhập kho:", err);
     }
   };
 
@@ -384,6 +452,16 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
               >
                 📦 Doanh thu & Đơn hàng
               </button>
+              <button 
+                className={`tab-btn ${activeTab === "inventory_approval" ? "active" : ""}`}
+                onClick={() => setActiveTab("inventory_approval")}
+              >
+                📋 Duyệt Nhập Kho {inventoryReceipts.filter(r => r.status === "pending_approval").length > 0 && (
+                  <span style={{ background: "#ef4444", color: "#fff", padding: "2px 8px", borderRadius: "99px", fontSize: "11px", marginLeft: "6px" }}>
+                    {inventoryReceipts.filter(r => r.status === "pending_approval").length}
+                  </span>
+                )}
+              </button>
             </div>
 
             <div className="content-shell animate-fade" style={{ animationDelay: "0.2s" }}>
@@ -421,27 +499,38 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
                           <td>{u.email}</td>
                           <td>
                             <span className={`role-badge ${u.role}`}>
-                              {u.role === "admin" ? "🛡️ Quản trị viên" : u.role === "staff" ? "💼 Nhân viên" : "👤 Khách hàng"}
+                              {u.role === "admin" ? "🛡️ Quản trị viên" : u.role === "staff" ? "💼 Cửa hàng (Staff)" : u.role === "warehouse" ? "📦 Quản lý kho" : "👤 Khách hàng"}
                             </span>
                           </td>
                           <td>
                             {u.role !== "admin" && (
-                              <div className="action-btns">
-                                {u.role === "customer" ? (
+                              <div className="action-btns" style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                                {u.role !== "staff" && (
                                   <button
                                     className="grant-btn"
                                     disabled={updating === u._id}
                                     onClick={() => handleUpdateRole(u._id, "staff")}
                                   >
-                                    {updating === u._id ? "..." : "Cấp quyền Staff"}
+                                    Set Staff
                                   </button>
-                                ) : (
+                                )}
+                                {u.role !== "warehouse" && (
+                                  <button
+                                    className="grant-btn"
+                                    style={{ background: "#6366f1", color: "#fff" }}
+                                    disabled={updating === u._id}
+                                    onClick={() => handleUpdateRole(u._id, "warehouse")}
+                                  >
+                                    Set Kho
+                                  </button>
+                                )}
+                                {u.role !== "customer" && (
                                   <button
                                     className="revoke-btn"
                                     disabled={updating === u._id}
                                     onClick={() => handleUpdateRole(u._id, "customer")}
                                   >
-                                    {updating === u._id ? "..." : "Gỡ quyền Staff"}
+                                    Set Khách
                                   </button>
                                 )}
                               </div>
@@ -613,7 +702,7 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
                     )}
                   </div>
                 </div>
-              ) : (
+              ) : activeTab === "orders" ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
                   {/* Revenue Cards Row */}
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px" }}>
@@ -736,11 +825,179 @@ const AdminPage = ({ user, onOpenLogin, onOpenCart, handleLogout }) => {
                     </table>
                   </div>
                 </div>
+              ) : (
+                <div className="admin-table-wrapper" style={{ padding: "24px" }}>
+                  <h3 style={{ margin: "0 0 20px", fontSize: "1.2rem", color: "#1e293b" }}>
+                    Danh Sách Yêu Cầu Nhập Kho Trình Phê Duyệt ({inventoryReceipts.length})
+                  </h3>
+
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+                      <thead>
+                        <tr style={{ borderBottom: "2px solid #e2e8f0", color: "#64748b", fontSize: "0.85rem", textTransform: "uppercase" }}>
+                          <th style={{ padding: "12px" }}>Mã Phiếu</th>
+                          <th style={{ padding: "12px" }}>Trạng Thái</th>
+                          <th style={{ padding: "12px" }}>Ảnh Chứng Từ</th>
+                          <th style={{ padding: "12px" }}>Sản Phẩm Nhập</th>
+                          <th style={{ padding: "12px" }}>Số Lượng</th>
+                          <th style={{ padding: "12px" }}>Đơn Giá</th>
+                          <th style={{ padding: "12px" }}>Tổng Giá Trị</th>
+                          <th style={{ padding: "12px" }}>Nhà Cung Cấp</th>
+                          <th style={{ padding: "12px" }}>Người Lập</th>
+                          <th style={{ padding: "12px" }}>Hành Động Admin</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {inventoryReceipts.length === 0 ? (
+                          <tr>
+                            <td colSpan="10" style={{ textAlign: "center", padding: "32px", color: "#94a3b8" }}>
+                              Chưa có yêu cầu nhập kho nào.
+                            </td>
+                          </tr>
+                        ) : (
+                          inventoryReceipts.map(rec => {
+                            const isPending = rec.status === "pending_approval";
+                            const isApproved = rec.status === "approved";
+                            const isRejected = rec.status === "rejected";
+
+                            return (
+                              <tr key={rec._id || rec.receiptCode} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                                <td style={{ padding: "14px 12px" }}>
+                                  <strong style={{ color: "#3730a3", fontSize: "0.85rem" }}>{rec.receiptCode}</strong>
+                                  <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{new Date(rec.createdAt).toLocaleString("vi-VN")}</div>
+                                </td>
+
+                                <td style={{ padding: "14px 12px" }}>
+                                  <span style={{
+                                    padding: "4px 10px",
+                                    borderRadius: "99px",
+                                    fontWeight: "800",
+                                    fontSize: "0.75rem",
+                                    background: isPending ? "#fef3c7" : isApproved ? "#dcfce7" : "#fee2e2",
+                                    color: isPending ? "#d97706" : isApproved ? "#15803d" : "#b91c1c"
+                                  }}>
+                                    {isPending ? "⏳ Chờ duyệt" : isApproved ? "✅ Đã duyệt" : "❌ Từ chối"}
+                                  </span>
+                                </td>
+
+                                <td style={{ padding: "14px 12px" }}>
+                                  {rec.proofImage ? (
+                                    <img
+                                      src={rec.proofImage}
+                                      alt="Chứng từ"
+                                      onClick={() => setPreviewImage(rec.proofImage)}
+                                      style={{ width: "48px", height: "48px", objectFit: "cover", borderRadius: "8px", border: "1px solid #cbd5e1", cursor: "pointer" }}
+                                      title="Bấm để xem ảnh phóng to"
+                                    />
+                                  ) : (
+                                    <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>Không có</span>
+                                  )}
+                                </td>
+
+                                <td style={{ padding: "14px 12px", fontWeight: "700", color: "#1e293b" }}>
+                                  {rec.productName}
+                                </td>
+
+                                <td style={{ padding: "14px 12px", fontWeight: "800", color: "#059669" }}>
+                                  +{rec.quantity} SP
+                                </td>
+
+                                <td style={{ padding: "14px 12px", fontWeight: "600", color: "#475569" }}>
+                                  {formatPrice(rec.importPrice)}đ
+                                </td>
+
+                                <td style={{ padding: "14px 12px", fontWeight: "800", color: "#2563eb" }}>
+                                  {formatPrice(rec.totalPrice)}đ
+                                </td>
+
+                                <td style={{ padding: "14px 12px", fontSize: "0.85rem", color: "#475569" }}>
+                                  {rec.supplier}
+                                  {rec.note && <div style={{ fontSize: "0.75rem", color: "#94a3b8", fontStyle: "italic" }}>"{rec.note}"</div>}
+                                </td>
+
+                                <td style={{ padding: "14px 12px", fontSize: "0.85rem", color: "#334155" }}>
+                                  👤 {rec.createdByName || "Warehouse"}
+                                </td>
+
+                                <td style={{ padding: "14px 12px" }}>
+                                  {isPending ? (
+                                    <div style={{ display: "flex", gap: "6px" }}>
+                                      <button
+                                        onClick={() => handleApproveInventory(rec._id)}
+                                        style={{
+                                          padding: "6px 12px",
+                                          borderRadius: "8px",
+                                          background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                                          color: "#fff",
+                                          border: "none",
+                                          fontWeight: "700",
+                                          fontSize: "0.8rem",
+                                          cursor: "pointer"
+                                        }}
+                                      >
+                                        ✅ Duyệt & Nhập Kho
+                                      </button>
+                                      <button
+                                        onClick={() => handleRejectInventory(rec._id)}
+                                        style={{
+                                          padding: "6px 10px",
+                                          borderRadius: "8px",
+                                          background: "#ef4444",
+                                          color: "#fff",
+                                          border: "none",
+                                          fontWeight: "600",
+                                          fontSize: "0.8rem",
+                                          cursor: "pointer"
+                                        }}
+                                      >
+                                        ❌ Từ Chối
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div style={{ fontSize: "0.8rem", color: "#64748b" }}>
+                                      {rec.approvedByName ? `Duyệt bởi ${rec.approvedByName}` : "Đã xử lý"}
+                                      {rec.rejectReason && <div style={{ color: "#ef4444", fontSize: "0.75rem" }}>Lý do: {rec.rejectReason}</div>}
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               )}
             </div>
           </div>
         </main>
       )}
+
+      {/* PROOF IMAGE PREVIEW MODAL */}
+      {previewImage && (
+        <div 
+          onClick={() => setPreviewImage(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 2000,
+            background: "rgba(0,0,0,0.8)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+            cursor: "pointer"
+          }}
+        >
+          <img
+            src={previewImage}
+            alt="Chứng từ phóng to"
+            style={{ maxWidth: "90%", maxHeight: "90%", borderRadius: "16px", boxShadow: "0 20px 50px rgba(0,0,0,0.5)" }}
+          />
+        </div>
+      )}
+
     </div>
   );
 };

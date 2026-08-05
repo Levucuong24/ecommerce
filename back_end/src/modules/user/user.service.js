@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const { User, Coupon } = require("../../models");
 const { listResources, getResourceById } = require("../resource/resource.service");
 
-const VALID_ROLES = new Set(["admin", "staff", "customer"]);
+const VALID_ROLES = new Set(["admin", "staff", "customer", "warehouse"]);
 
 const getUsers = async (query) => listResources(User, query);
 
