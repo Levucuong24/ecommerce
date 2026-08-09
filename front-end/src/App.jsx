@@ -293,15 +293,12 @@ function App() {
       .then((res) => {
         if (res.ok) {
           emitDataChanged(DATA_EVENTS.PRODUCTS);
-          if (pendingItem.isBuyNow) {
-            navigate("/cart");
-          }
         }
       })
       .catch((err) => {
         console.error("Error adding pending item to cart:", err);
       });
-  }, [user, navigate]);
+  }, [user]);
 
   const clearMessage = () => {
     setMessage("");
@@ -334,22 +331,9 @@ function App() {
       const data = await response.json();
       if (response.ok && data.user) {
         saveAuthSession(data.token, data.user, false);
-
-        const pendingItemStr = localStorage.getItem("pending_cart_item");
-        let isBuyNow = false;
-        if (pendingItemStr) {
-          try {
-            const item = JSON.parse(pendingItemStr);
-            isBuyNow = item.isBuyNow;
-          } catch (e) {}
-        }
-
         setUser(data.user);
-
-        if (!isBuyNow) {
-          const userId = data.user._id || data.user.id;
-          navigate(getDefaultRouteByRole(data.user.role, userId));
-        }
+        const userId = data.user._id || data.user.id;
+        navigate(getDefaultRouteByRole(data.user.role, userId));
       } else {
         setMessage(data.message || "Đăng nhập Google thất bại");
         setMessageType("error");
@@ -460,25 +444,13 @@ function App() {
 
       if (data.user) {
         saveAuthSession(data.token, data.user, loginData.remember);
-
-        const pendingItemStr = localStorage.getItem("pending_cart_item");
-        let isBuyNow = false;
-        if (pendingItemStr) {
-          try {
-            const item = JSON.parse(pendingItemStr);
-            isBuyNow = item.isBuyNow;
-          } catch (e) {}
-        }
-
         setUser(data.user);
         setMessage("Dang nhap thanh cong");
         setMessageType("success");
 
         setTimeout(() => {
-          if (!isBuyNow) {
-            const userId = data.user?._id || data.user?.id;
-            navigate(getDefaultRouteByRole(userRole, userId));
-          }
+          const userId = data.user?._id || data.user?.id;
+          navigate(getDefaultRouteByRole(userRole, userId));
         }, 1000);
       }
     } catch (error) {
