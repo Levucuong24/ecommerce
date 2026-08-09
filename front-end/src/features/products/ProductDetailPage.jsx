@@ -208,15 +208,22 @@ function ProductDetailPage({ onOpenLogin, onOpenCart, user, onLogout, onChatWith
   };
 
   const handleAddToCart = async (isBuyNow = false) => {
-    if (!user) {
-      onOpenLogin();
+    // Yêu cầu chọn màu sắc nếu sản phẩm có biến thể màu
+    if (product?.colors && product.colors.length > 0 && !selectedColor) {
+      setModalActionType(isBuyNow ? "buy" : "add");
+      setShowColorSelectionModal(true);
       return;
     }
 
-    // Yêu cầu chọn màu sắc nếu sản phẩm có biến thể màu
-    if (product.colors && product.colors.length > 0 && !selectedColor) {
-      setModalActionType(isBuyNow ? "buy" : "add");
-      setShowColorSelectionModal(true);
+    if (!user) {
+      const pendingItem = {
+        productId: id,
+        quantity: quantity,
+        color: (selectedColor && !selectedColor.isOriginal) ? selectedColor.name : undefined,
+        isBuyNow: isBuyNow,
+      };
+      localStorage.setItem("pending_cart_item", JSON.stringify(pendingItem));
+      onOpenLogin();
       return;
     }
 

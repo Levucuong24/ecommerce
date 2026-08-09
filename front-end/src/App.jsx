@@ -256,6 +256,53 @@ function App() {
     refreshUserProfile();
   }, []);
 
+  useEffect(() => {
+    if (!user) return;
+
+    const pendingItemStr = localStorage.getItem("pending_cart_item");
+    if (!pendingItemStr) return;
+
+    let pendingItem;
+    try {
+      pendingItem = JSON.parse(pendingItemStr);
+    } catch (e) {
+      console.error("Error parsing pending_cart_item:", e);
+      localStorage.removeItem("pending_cart_item");
+      return;
+    }
+
+    localStorage.removeItem("pending_cart_item");
+
+    if (!pendingItem || !pendingItem.productId) return;
+
+    const token = getAuthToken();
+    if (!token) return;
+
+    fetch(`${apiUrl}/cart`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        productId: pendingItem.productId,
+        quantity: pendingItem.quantity || 1,
+        color: pendingItem.color,
+      }),
+    })
+      .then((res) => {
+        if (res.ok) {
+          emitDataChanged(DATA_EVENTS.PRODUCTS);
+          if (pendingItem.isBuyNow) {
+            navigate("/cart");
+          }
+        }
+      })
+      .catch((err) => {
+        console.error("Error adding pending item to cart:", err);
+      });
+  }, [user, navigate]);
+
   const clearMessage = () => {
     setMessage("");
     setMessageType("");
@@ -287,9 +334,22 @@ function App() {
       const data = await response.json();
       if (response.ok && data.user) {
         saveAuthSession(data.token, data.user, false);
+
+        const pendingItemStr = localStorage.getItem("pending_cart_item");
+        let isBuyNow = false;
+        if (pendingItemStr) {
+          try {
+            const item = JSON.parse(pendingItemStr);
+            isBuyNow = item.isBuyNow;
+          } catch (e) {}
+        }
+
         setUser(data.user);
-        const userId = data.user._id || data.user.id;
-        navigate(getDefaultRouteByRole(data.user.role, userId));
+
+        if (!isBuyNow) {
+          const userId = data.user._id || data.user.id;
+          navigate(getDefaultRouteByRole(data.user.role, userId));
+        }
       } else {
         setMessage(data.message || "Đăng nhập Google thất bại");
         setMessageType("error");
@@ -400,13 +460,25 @@ function App() {
 
       if (data.user) {
         saveAuthSession(data.token, data.user, loginData.remember);
+
+        const pendingItemStr = localStorage.getItem("pending_cart_item");
+        let isBuyNow = false;
+        if (pendingItemStr) {
+          try {
+            const item = JSON.parse(pendingItemStr);
+            isBuyNow = item.isBuyNow;
+          } catch (e) {}
+        }
+
         setUser(data.user);
         setMessage("Dang nhap thanh cong");
         setMessageType("success");
 
         setTimeout(() => {
-          const userId = data.user?._id || data.user?.id;
-          navigate(getDefaultRouteByRole(userRole, userId));
+          if (!isBuyNow) {
+            const userId = data.user?._id || data.user?.id;
+            navigate(getDefaultRouteByRole(userRole, userId));
+          }
         }, 1000);
       }
     } catch (error) {
